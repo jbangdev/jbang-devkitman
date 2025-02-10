@@ -14,9 +14,9 @@ First include the library in your project:
 
 ```xml
 <dependency>
-    <groupId>dev.jbang</groupId>
-    <artifactId>jdkmanager</artifactId>
-    <version>0.1.0</version>
+	<groupId>dev.jbang</groupId>
+	<artifactId>jdkmanager</artifactId>
+	<version>0.1.0</version>
 </dependency>
 ```
 
@@ -32,11 +32,11 @@ Then the simplest way to get started is:
 import dev.jbang.devkitman.*;
 
 public class Main {
-    public static void main(String[] args) {
-        JDKManager jdkManager = JDKManager.create();
-        Jdk jdk = jdkManager.getOrInstall("11+");
-        System.out.println("JDK " + jdk.majorVersion() + " home folder " + jdk.getHome());
-    }
+	public static void main(String[] args) {
+		JDKManager jdkManager = JDKManager.create();
+		Jdk jdk = jdkManager.getOrInstall("11+");
+		System.out.println("JDK " + jdk.majorVersion() + " home folder " + jdk.getHome());
+	}
 }
 ```
 
