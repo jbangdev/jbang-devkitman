@@ -1,0 +1,113 @@
+plugins {
+	id 'java'
+	id "com.diffplug.spotless" version "6.13.0" // can't go higher to still work with Java 8
+	id 'maven-publish'
+}
+
+group = 'dev.jbang'
+version = '0.1.0-SNAPSHOT'
+
+sourceCompatibility = '8'
+targetCompatibility = '8'
+
+javadoc {
+	options.encoding = 'UTF-8'
+	//remove this to see all the missing tags/parameters.
+	options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+repositories {
+	mavenCentral()
+}
+
+java {
+	withJavadocJar()
+	withSourcesJar()
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupId = 'dev.jbang'
+			artifactId = 'devkitman'
+
+			from components.java
+
+			pom {
+				name = 'JBang JDK Manager'
+				description = 'Library for managing JDK installations'
+				url = 'https://github.com/jbangdev/jbang-devkitman'
+				inceptionYear = '2025'
+				licenses {
+					license {
+						name = 'MIT'
+						url = 'https://github.com/jbangdev/jbang-devkitman/blob/main/LICENSE'
+					}
+				}
+				developers {
+					developer {
+						id = 'maxandersen'
+						name = 'Max Rydahl Andersen'
+					}
+					developer {
+						id = 'quintesse'
+						name = 'Tako Schotanus'
+					}
+				}
+				scm {
+					connection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
+					developerConnection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
+					url = 'http://github.com/jbangdev/jbang-devkitman'
+				}
+			}
+		}
+	}
+}
+
+dependencies {
+	implementation 'org.apache.commons:commons-compress:1.27.1'
+	implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+	implementation 'org.apache.httpcomponents:httpclient-cache:4.5.14'
+	implementation 'com.google.code.gson:gson:2.11.0'
+	implementation 'org.jspecify:jspecify:1.0.0'
+
+	testImplementation platform('org.junit:junit-bom:5.10.1')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testImplementation "org.hamcrest:hamcrest-library:2.2"
+	testImplementation "uk.org.webcompere:system-stubs-jupiter:2.1.7"
+	testImplementation "uk.org.webcompere:system-stubs-core:2.1.7"
+}
+
+tasks.withType(AbstractArchiveTask) {
+	preserveFileTimestamps = false
+	reproducibleFileOrder = true
+}
+
+spotless {
+	lineEndings 'UNIX'
+	format 'misc', {
+		target '**/*.gradle', '**/*.md', '**/.gitignore'
+		targetExclude 'build/**/*', 'out/**/*'
+		trimTrailingWhitespace()
+		indentWithTabs(4)
+		endWithNewline()
+	}
+	java {
+		importOrder 'java', 'javax', 'org', 'com', 'dev.jbang', ''
+		removeUnusedImports()
+		eclipse().configFile "misc/eclipse_formatting_nowrap.xml"
+		targetExclude 'build/**/*'
+	}
+	format 'xml', {
+		targetExclude 'build/test-results', fileTree('.idea')
+		target '**/*.xml', '**/*.nuspec'
+	}
+}
+
+test {
+	useJUnitPlatform()
+	jvmArgs = [
+			"--add-opens", "java.base/java.lang=ALL-UNNAMED",
+			"--add-opens", "java.base/java.util=ALL-UNNAMED"
+	]
+}

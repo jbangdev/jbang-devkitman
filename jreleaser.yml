@@ -1,0 +1,57 @@
+project:
+  name: jbang-devkitman
+  description: A library for managing JDK versions
+  longDescription: |
+    This library provides a framework for encountering Java versions
+    that are installed on a user's machine. It also provides a way to
+    downlaod and install new versions of Java.
+  links:
+    homepage: https://github.com/jbangdev/jbang-devkitman
+    documentation: https://github.com/jbangdev/jbang-devkitman
+    license: https://github.com/jbangdev/jbang-devkitman/blob/main/LICENSE
+  authors:
+    - Max Rydahl Andersen
+    - Tako Schotanus
+  license: MIT
+  tags:
+    - jbang
+    - java
+  java:
+    groupId: dev.jbang
+    artifactId: devkitman
+    version: 8
+  inceptionYear: 2025
+  stereotype: NONE
+
+release:
+  github:
+    overwrite: true
+    draft: true
+    sign: true
+    releaseName: '{{tagName}}'
+    skipTag: true
+    milestone:
+      close: false
+    changelog:
+      formatted: always
+      preset: "conventional-commits"
+      format: '- {{commitShortHash}} {{commitTitle}}'
+
+checksum:
+  individual: true
+
+signing:
+  active: ALWAYS
+  armored: true
+
+deploy:
+  maven:
+    nexus2:
+      maven-central:
+        active: ALWAYS
+        url: https://oss.sonatype.org/service/local
+        snapshotUrl: https://oss.sonatype.org/content/repositories/snapshots/
+        closeRepository: true
+        releaseRepository: true
+        stagingRepositories:
+          - build/staging-deploy
