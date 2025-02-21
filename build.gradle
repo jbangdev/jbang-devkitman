@@ -1,5 +1,5 @@
 plugins {
-	id 'java'
+	id 'java-library'
 	id "com.diffplug.spotless" version "6.13.0" // can't go higher to still work with Java 8
 	id 'maven-publish'
 }
@@ -23,6 +23,9 @@ repositories {
 java {
 	withJavadocJar()
 	withSourcesJar()
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(11)
+	}
 }
 
 publishing {
