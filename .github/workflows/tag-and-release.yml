@@ -29,11 +29,12 @@ jobs:
           cache: gradle
       - name: build-gradle
         run: ./gradlew --no-daemon --build-cache --scan -s clean build jreleaserRelease
-      - name: JReleaser output
+      - name: build-output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jreleaser-release
+          name: release-output
           path: |
+            build/reports
             build/jreleaser/trace.log
             build/jreleaser/output.properties
