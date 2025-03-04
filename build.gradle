@@ -62,12 +62,11 @@ tasks.withType(AbstractArchiveTask) {
 }
 
 spotless {
-	lineEndings 'UNIX'
 	format 'misc', {
 		target '**/*.gradle', '**/*.md', '**/.gitignore'
 		targetExclude 'build/**/*', 'out/**/*'
 		trimTrailingWhitespace()
-		indentWithTabs(4)
+		leadingSpacesToTabs()
 		endWithNewline()
 	}
 	java {
