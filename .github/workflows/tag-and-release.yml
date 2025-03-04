@@ -28,7 +28,7 @@ jobs:
           distribution: temurin
           cache: gradle
       - name: build-gradle
-        run: ./gradlew --no-daemon --build-cache --scan -s clean build jreleaserRelease
+        run: ./gradlew --no-daemon --build-cache --scan -s clean publish jreleaserRelease
       - name: build-output
         if: always()
         uses: actions/upload-artifact@v4
