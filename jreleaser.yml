@@ -16,10 +16,11 @@ project:
   tags:
     - jbang
     - java
-  java:
-    groupId: dev.jbang
-    artifactId: devkitman
-    version: 8
+  languages:
+    java:
+      groupId: dev.jbang
+      artifactId: devkitman
+      version: 8
   inceptionYear: 2025
   stereotype: NONE
 

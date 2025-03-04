@@ -3,6 +3,7 @@ plugins {
 	id 'io.toolebox.git-versioner' version '1.6.5'
 	id 'com.diffplug.spotless' version '7.0.2'
 	id 'maven-publish'
+	id 'org.jreleaser' version '1.17.0'
 }
 
 group = 'dev.jbang'
@@ -36,45 +37,6 @@ versioner {
 		authentication {
 			https {
 				token = project.hasProperty('github_token') ? getProperty('github_token') : "unknown_github_token"
-			}
-		}
-	}
-}
-
-publishing {
-	publications {
-		maven(MavenPublication) {
-			groupId = 'dev.jbang'
-			artifactId = 'devkitman'
-
-			from components.java
-
-			pom {
-				name = 'JBang JDK Manager'
-				description = 'Library for managing JDK installations'
-				url = 'https://github.com/jbangdev/jbang-devkitman'
-				inceptionYear = '2025'
-				licenses {
-					license {
-						name = 'MIT'
-						url = 'https://github.com/jbangdev/jbang-devkitman/blob/main/LICENSE'
-					}
-				}
-				developers {
-					developer {
-						id = 'maxandersen'
-						name = 'Max Rydahl Andersen'
-					}
-					developer {
-						id = 'quintesse'
-						name = 'Tako Schotanus'
-					}
-				}
-				scm {
-					connection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
-					developerConnection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
-					url = 'http://github.com/jbangdev/jbang-devkitman'
-				}
 			}
 		}
 	}
@@ -126,4 +88,47 @@ test {
 			"--add-opens", "java.base/java.lang=ALL-UNNAMED",
 			"--add-opens", "java.base/java.util=ALL-UNNAMED"
 	]
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupId = 'dev.jbang'
+			artifactId = 'devkitman'
+
+			from components.java
+
+			pom {
+				name = 'JBang JDK Manager'
+				description = 'Library for managing JDK installations'
+				url = 'https://github.com/jbangdev/jbang-devkitman'
+				inceptionYear = '2025'
+				licenses {
+					license {
+						name = 'MIT'
+						url = 'https://github.com/jbangdev/jbang-devkitman/blob/main/LICENSE'
+					}
+				}
+				developers {
+					developer {
+						id = 'maxandersen'
+						name = 'Max Rydahl Andersen'
+					}
+					developer {
+						id = 'quintesse'
+						name = 'Tako Schotanus'
+					}
+				}
+				scm {
+					connection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
+					developerConnection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
+					url = 'http://github.com/jbangdev/jbang-devkitman'
+				}
+			}
+		}
+	}
+}
+
+jreleaser {
+	configFile = file('jreleaser.yml')
 }
