@@ -28,9 +28,9 @@ public class MockJdkProvider extends BaseFoldersJdkProvider {
 
 	@Override
 	public @NonNull List<Jdk> listAvailable() {
-		return Arrays	.stream(versions)
-						.mapToObj(v -> createJdk(v + "-dummy", null, v + ".0.7"))
-						.collect(Collectors.toList());
+		return Arrays.stream(versions)
+			.mapToObj(v -> createJdk(v + "-dummy", null, v + ".0.7"))
+			.collect(Collectors.toList());
 	}
 
 	@Override

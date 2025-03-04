@@ -59,9 +59,9 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	public List<Jdk> listInstalled() {
 		if (Files.isDirectory(jdksRoot)) {
 			try (Stream<Path> jdkPaths = listJdkPaths()) {
-				return jdkPaths	.map(this::createJdk)
-								.filter(Objects::nonNull)
-								.collect(Collectors.toList());
+				return jdkPaths.map(this::createJdk)
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
 			} catch (IOException e) {
 				LOGGER.log(Level.FINE, "Couldn't list installed JDKs", e);
 			}

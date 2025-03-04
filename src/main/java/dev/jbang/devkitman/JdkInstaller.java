@@ -43,8 +43,8 @@ public interface JdkInstaller {
 	 */
 	@Nullable
 	default Jdk getAvailableByIdOrToken(String idOrToken) {
-		return JdkManager	.getJdkBy(listAvailable().stream(), Jdk.Predicates.id(idOrToken))
-							.orElse(null);
+		return JdkManager.getJdkBy(listAvailable().stream(), Jdk.Predicates.id(idOrToken))
+			.orElse(null);
 	}
 
 	/**

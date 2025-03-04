@@ -21,10 +21,10 @@ import org.apache.http.impl.client.cache.CachingHttpClientBuilder;
 public class NetUtils {
 
 	public static final RequestConfig DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
-																			.setConnectionRequestTimeout(10000)
-																			.setConnectTimeout(10000)
-																			.setSocketTimeout(30000)
-																			.build();
+		.setConnectionRequestTimeout(10000)
+		.setConnectTimeout(10000)
+		.setSocketTimeout(30000)
+		.build();
 
 	public static Path downloadFromUrl(String url) throws IOException {
 		HttpClientBuilder builder = createDefaultHttpClientBuilder();
@@ -48,8 +48,8 @@ public class NetUtils {
 				builder,
 				url,
 				mimetypeChecker("application/json")
-													.andThen(NetUtils::responseStreamer)
-													.andThen(streamToObject));
+					.andThen(NetUtils::responseStreamer)
+					.andThen(streamToObject));
 	}
 
 	public static HttpClientBuilder createDefaultHttpClientBuilder() {
@@ -59,10 +59,10 @@ public class NetUtils {
 
 		// return
 		// HttpClientBuilder.create().setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG);
-		return CachingHttpClientBuilder	.create()
-										.setCacheConfig(cacheConfig)
-										.setHttpCacheStorage(cacheStorage)
-										.setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG);
+		return CachingHttpClientBuilder.create()
+			.setCacheConfig(cacheConfig)
+			.setHttpCacheStorage(cacheStorage)
+			.setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG);
 	}
 
 	public static <T> T requestUrl(

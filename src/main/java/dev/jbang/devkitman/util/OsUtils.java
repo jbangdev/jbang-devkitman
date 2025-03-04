@@ -40,9 +40,9 @@ public class OsUtils {
 	}
 
 	public static OS getOS() {
-		String os = System	.getProperty("os.name")
-							.toLowerCase(Locale.ENGLISH)
-							.replaceAll("[^a-z0-9]+", "");
+		String os = System.getProperty("os.name")
+			.toLowerCase(Locale.ENGLISH)
+			.replaceAll("[^a-z0-9]+", "");
 		if (os.startsWith("mac") || os.startsWith("osx")) {
 			return OS.mac;
 		} else if (os.startsWith("linux")) {
@@ -59,8 +59,8 @@ public class OsUtils {
 
 	public static Arch getArch() {
 		String arch = System.getProperty("os.arch")
-							.toLowerCase(Locale.ENGLISH)
-							.replaceAll("[^a-z0-9]+", "");
+			.toLowerCase(Locale.ENGLISH)
+			.replaceAll("[^a-z0-9]+", "");
 		if (arch.matches("^(x8664|amd64|ia32e|em64t|x64)$")) {
 			return Arch.x64;
 		} else if (arch.matches("^(x8632|x86|i[3-6]86|ia32|x32)$")) {
@@ -113,12 +113,12 @@ public class OsUtils {
 	 * @return A Path to the executable, if found, null otherwise
 	 */
 	public static Path searchPath(String cmd, String paths) {
-		return Arrays	.stream(paths.split(File.pathSeparator))
-						.map(dir -> Paths.get(dir).resolve(cmd))
-						.flatMap(OsUtils::executables)
-						.filter(OsUtils::isExecutable)
-						.findFirst()
-						.orElse(null);
+		return Arrays.stream(paths.split(File.pathSeparator))
+			.map(dir -> Paths.get(dir).resolve(cmd))
+			.flatMap(OsUtils::executables)
+			.filter(OsUtils::isExecutable)
+			.findFirst()
+			.orElse(null);
 	}
 
 	private static Stream<Path> executables(Path base) {

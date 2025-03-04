@@ -62,16 +62,16 @@ public class BaseTest {
 	}
 
 	protected JdkManager jdkManager(String... providerNames) {
-		return JdkManager	.builder()
-							.providers(JdkProviders.instance().parseNames(config, providerNames))
-							.build();
+		return JdkManager.builder()
+			.providers(JdkProviders.instance().parseNames(config, providerNames))
+			.build();
 	}
 
 	protected JdkManager mockJdkManager(int... providerNames) {
-		return JdkManager	.builder()
-							.providers(
-									new MockJdkProvider(config.installPath, this::createMockJdk, providerNames))
-							.build();
+		return JdkManager.builder()
+			.providers(
+					new MockJdkProvider(config.installPath, this::createMockJdk, providerNames))
+			.build();
 	}
 
 	protected Path createMockJdk(int jdkVersion) {

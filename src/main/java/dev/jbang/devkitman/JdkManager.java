@@ -83,9 +83,9 @@ public class JdkManager {
 		if (LOGGER.isLoggable(Level.FINE)) {
 			LOGGER.fine(
 					"Using JDK provider(s): "
-							+ providers	.stream()
-										.map(p -> p.getClass().getSimpleName())
-										.collect(Collectors.joining(", ")));
+							+ providers.stream()
+								.map(p -> p.getClass().getSimpleName())
+								.collect(Collectors.joining(", ")));
 		}
 	}
 
@@ -351,10 +351,10 @@ public class JdkManager {
 	private Jdk getInstalledJdkByVersion(
 			int version, boolean openVersion, @NonNull Predicate<JdkProvider> providerFilter) {
 		return providers(providerFilter)
-										.map(p -> p.getInstalledByVersion(version, openVersion))
-										.filter(Objects::nonNull)
-										.findFirst()
-										.orElse(null);
+			.map(p -> p.getInstalledByVersion(version, openVersion))
+			.filter(Objects::nonNull)
+			.findFirst()
+			.orElse(null);
 	}
 
 	/**
@@ -370,10 +370,10 @@ public class JdkManager {
 	private Jdk getInstalledJdkById(
 			String requestedId, @NonNull Predicate<JdkProvider> providerFilter) {
 		return providers(providerFilter)
-										.map(p -> p.getInstalledById(requestedId))
-										.filter(Objects::nonNull)
-										.findFirst()
-										.orElse(null);
+			.map(p -> p.getInstalledById(requestedId))
+			.filter(Objects::nonNull)
+			.findFirst()
+			.orElse(null);
 	}
 
 	@Nullable
@@ -397,8 +397,8 @@ public class JdkManager {
 			// be causing all kinds of trouble
 			try {
 				Path jdkTmpDir = jdk.home()
-									.getParent()
-									.resolve("_delete_me_" + jdk.home().getFileName().toString());
+					.getParent()
+					.resolve("_delete_me_" + jdk.home().getFileName().toString());
 				Files.move(jdk.home(), jdkTmpDir);
 				Files.move(jdkTmpDir, jdk.home());
 			} catch (IOException ex) {
@@ -473,8 +473,8 @@ public class JdkManager {
 	private Optional<Jdk> nextInstalledJdk(
 			int minVersion, @NonNull Predicate<JdkProvider> providerFilter) {
 		return listInstalledJdks(providerFilter)
-												.filter(jdk -> jdk.majorVersion() >= minVersion)
-												.min(Jdk::compareTo);
+			.filter(jdk -> jdk.majorVersion() >= minVersion)
+			.min(Jdk::compareTo);
 	}
 
 	/**
@@ -489,8 +489,8 @@ public class JdkManager {
 	private Optional<Jdk> prevInstalledJdk(
 			int maxVersion, @NonNull Predicate<JdkProvider> providerFilter) {
 		return listInstalledJdks(providerFilter)
-												.filter(jdk -> jdk.majorVersion() <= maxVersion)
-												.max(Jdk::compareTo);
+			.filter(jdk -> jdk.majorVersion() <= maxVersion)
+			.max(Jdk::compareTo);
 	}
 
 	/**
@@ -502,15 +502,15 @@ public class JdkManager {
 	 * @return an optional JDK
 	 */
 	private Optional<Jdk> prevAvailableJdk(int maxVersion) {
-		return listAvailableJdks()	.stream()
-									.filter(jdk -> jdk.majorVersion() <= maxVersion)
-									.max(Jdk::compareTo);
+		return listAvailableJdks().stream()
+			.filter(jdk -> jdk.majorVersion() <= maxVersion)
+			.max(Jdk::compareTo);
 	}
 
 	public List<Jdk> listAvailableJdks() {
 		return providers(JdkProvider.Predicates.canUpdate)
-															.flatMap(p -> p.listAvailable().stream())
-															.collect(Collectors.toList());
+			.flatMap(p -> p.listAvailable().stream())
+			.collect(Collectors.toList());
 	}
 
 	public List<Jdk> listInstalledJdks() {
@@ -559,7 +559,7 @@ public class JdkManager {
 	public boolean isCurrentJdkManaged() {
 		Path currentJdk = Paths.get(System.getProperty("java.home"));
 		return providers(JdkProvider.Predicates.canUpdate)
-															.anyMatch(p -> p.getInstalledByPath(currentJdk) != null);
+			.anyMatch(p -> p.getInstalledByPath(currentJdk) != null);
 	}
 
 	@NonNull

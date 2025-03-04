@@ -68,8 +68,8 @@ public class JavaUtils {
 			return lines.filter(
 					l -> l.startsWith("JAVA_VERSION=")
 							|| l.startsWith("JAVA_RUNTIME_VERSION="))
-						.map(JavaUtils::parseJavaOutput)
-						.findAny();
+				.map(JavaUtils::parseJavaOutput)
+				.findAny();
 		} catch (IOException e) {
 			LOGGER.fine("Unable to read 'release' file in path: " + home);
 			return Optional.empty();

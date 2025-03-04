@@ -94,26 +94,26 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	// Filter out any EA releases for which a GA with
 	// the same major version exists
 	private List<JdkResult> filterEA(List<JdkResult> jdks) {
-		Set<Integer> GAs = jdks	.stream()
-								.filter(jdk -> jdk.release_status.equals("ga"))
-								.map(jdk -> jdk.major_version)
-								.collect(Collectors.toSet());
+		Set<Integer> GAs = jdks.stream()
+			.filter(jdk -> jdk.release_status.equals("ga"))
+			.map(jdk -> jdk.major_version)
+			.collect(Collectors.toSet());
 
 		JdkResult[] lastJdk = new JdkResult[] { null };
-		return jdks	.stream()
-					.filter(
-							jdk -> {
-								if (lastJdk[0] == null
-										|| lastJdk[0].major_version != jdk.major_version
-												&& (jdk.release_status.equals("ga")
-														|| !GAs.contains(jdk.major_version))) {
-									lastJdk[0] = jdk;
-									return true;
-								} else {
-									return false;
-								}
-							})
-					.collect(Collectors.toList());
+		return jdks.stream()
+			.filter(
+					jdk -> {
+						if (lastJdk[0] == null
+								|| lastJdk[0].major_version != jdk.major_version
+										&& (jdk.release_status.equals("ga")
+												|| !GAs.contains(jdk.major_version))) {
+							lastJdk[0] = jdk;
+							return true;
+						} else {
+							return false;
+						}
+					})
+			.collect(Collectors.toList());
 	}
 
 	@NonNull

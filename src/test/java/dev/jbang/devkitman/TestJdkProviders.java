@@ -99,16 +99,16 @@ public class TestJdkProviders extends BaseTest {
 		String name = "jbang;aap=noot;mies=wim";
 		assertThat(
 				JdkProviders.instance()
-							.parseName(
-									config,
-									name,
-									(prov, config) -> {
-										assertThat(prov, equalTo("jbang"));
-										assertThat(config.properties, hasEntry("aap", "noot"));
-										assertThat(config.properties, hasEntry("mies", "wim"));
-										return new JBangJdkProvider(
-												config.installPath);
-									}),
+					.parseName(
+							config,
+							name,
+							(prov, config) -> {
+								assertThat(prov, equalTo("jbang"));
+								assertThat(config.properties, hasEntry("aap", "noot"));
+								assertThat(config.properties, hasEntry("mies", "wim"));
+								return new JBangJdkProvider(
+										config.installPath);
+							}),
 				is(instanceOf(JBangJdkProvider.class)));
 	}
 

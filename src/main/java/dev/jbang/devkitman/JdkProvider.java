@@ -67,9 +67,9 @@ public interface JdkProvider {
 	 */
 	@Nullable
 	default Jdk getInstalledByVersion(int version, boolean openVersion) {
-		return JdkManager	.getJdkBy(
-									listInstalled().stream(), Jdk.Predicates.forVersion(version, openVersion))
-							.orElse(null);
+		return JdkManager.getJdkBy(
+				listInstalled().stream(), Jdk.Predicates.forVersion(version, openVersion))
+			.orElse(null);
 	}
 
 	/**
@@ -83,8 +83,8 @@ public interface JdkProvider {
 	@Nullable
 	default Jdk getInstalledById(@NonNull String id) {
 		if (isValidId(id)) {
-			return JdkManager	.getJdkBy(listInstalled().stream(), Jdk.Predicates.id(id))
-								.orElse(null);
+			return JdkManager.getJdkBy(listInstalled().stream(), Jdk.Predicates.id(id))
+				.orElse(null);
 		}
 		return null;
 	}
@@ -99,8 +99,8 @@ public interface JdkProvider {
 	 */
 	@Nullable
 	default Jdk getInstalledByPath(@NonNull Path jdkPath) {
-		return JdkManager	.getJdkBy(listInstalled().stream(), Jdk.Predicates.path(jdkPath))
-							.orElse(null);
+		return JdkManager.getJdkBy(listInstalled().stream(), Jdk.Predicates.path(jdkPath))
+			.orElse(null);
 	}
 
 	/**
@@ -164,8 +164,8 @@ public interface JdkProvider {
 	 */
 	@Nullable
 	default Jdk getAvailableByIdOrToken(String idOrToken) {
-		return JdkManager	.getJdkBy(listAvailable().stream(), Jdk.Predicates.id(idOrToken))
-							.orElse(null);
+		return JdkManager.getJdkBy(listAvailable().stream(), Jdk.Predicates.id(idOrToken))
+			.orElse(null);
 	}
 
 	/**
