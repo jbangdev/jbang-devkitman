@@ -2,7 +2,6 @@ package dev.jbang.devkitman.util;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -95,19 +94,19 @@ public class FileUtils {
 		try {
 			if (isLink(path)) {
 				LOGGER.log(Level.FINE, "Deleting link {0}", path);
-				Files.delete(path);
 			} else if (Files.isDirectory(path)) {
 				LOGGER.log(Level.FINE, "Deleting folder {0}", path);
 				try (Stream<Path> s = Files.list(path)) {
-					s.sorted(Comparator.reverseOrder()).forEach(FileUtils::deletePath);
+					s.forEach(FileUtils::deletePath);
 				}
 			} else if (Files.exists(path)) {
 				LOGGER.log(Level.FINE, "Deleting file {0}", path);
-				Files.delete(path);
 			} else if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
 				LOGGER.log(Level.FINE, "Deleting broken link {0}", path);
-				Files.delete(path);
+			} else {
+				return;
 			}
+			Files.delete(path);
 		} catch (Exception e) {
 			throw new IllegalStateException("Failed to delete " + path, e);
 		}
