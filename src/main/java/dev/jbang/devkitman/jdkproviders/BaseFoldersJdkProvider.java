@@ -3,10 +3,7 @@ package dev.jbang.devkitman.jdkproviders;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -127,7 +124,8 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 		String name = home.getFileName().toString();
 		Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(home);
 		if (version.isPresent() && acceptFolder(home)) {
-			return createJdk(jdkId(name), home, version.get(), fixedVersion);
+			Set<String> tags = JavaUtils.readTagsFromReleaseFile(home);
+			return createJdk(jdkId(name), home, version.get(), fixedVersion, null, tags);
 		}
 		return null;
 	}

@@ -1,6 +1,7 @@
 package dev.jbang.devkitman;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -44,6 +45,20 @@ public interface Jdk extends Comparable<Jdk> {
 	Path home();
 
 	/**
+	 * The JDK distribution name (e.g. "openjdk", "zulu", "temurin", etc.). Can be
+	 * <code>null</code> if the provider doesn't have or support a distribution
+	 * names
+	 */
+	String distro();
+
+	/**
+	 * Returns a set of tags that can be used to give additional information about
+	 * the JDK
+	 */
+	@NonNull
+	Set<String> tags();
+
+	/**
 	 * Returns the major version of the JDK
 	 */
 	int majorVersion();
@@ -78,8 +93,9 @@ public interface Jdk extends Comparable<Jdk> {
 		private final boolean fixedVersion;
 		@Nullable
 		private final Path home;
+		private final String distro;
 		@NonNull
-		private final Set<String> tags = new HashSet<>();
+		private final Set<String> tags;
 
 		Default(
 				@NonNull JdkProvider provider,
@@ -87,12 +103,15 @@ public interface Jdk extends Comparable<Jdk> {
 				@Nullable Path home,
 				@NonNull String version,
 				boolean fixedVersion,
-				@NonNull String... tags) {
+				String distro,
+				@NonNull Set<String> tags) {
 			this.provider = provider;
 			this.id = id;
 			this.version = version;
 			this.fixedVersion = fixedVersion;
 			this.home = home;
+			this.distro = distro;
+			this.tags = Collections.unmodifiableSet(new HashSet<>(tags));
 		}
 
 		@Override
@@ -126,6 +145,17 @@ public interface Jdk extends Comparable<Jdk> {
 						"Trying to retrieve home folder for uninstalled JDK");
 			}
 			return home;
+		}
+
+		@Override
+		public String distro() {
+			return distro;
+		}
+
+		@Override
+		@NonNull
+		public Set<String> tags() {
+			return tags;
 		}
 
 		@Override
@@ -176,7 +206,7 @@ public interface Jdk extends Comparable<Jdk> {
 		@Override
 		public String toString() {
 			return majorVersion() + " (" + version + (isFixedVersion() ? " (fixed)" : " (dynamic)") + ", " + id + ", "
-					+ home + ")";
+					+ home + ", " + distro + ", " + tags + ")";
 		}
 	}
 

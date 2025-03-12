@@ -6,9 +6,15 @@ import static org.hamcrest.Matchers.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -41,9 +47,7 @@ public class TestJdkInstaller extends BaseTest {
 				public <T> T resultFromUrl(
 						String url, Function<InputStream, T> streamToObject)
 						throws IOException {
-					if (!url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {
-						throw new IOException("Unexpected URL: " + url);
-					}
+					assertThat(url, startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL));
 					return streamToObject.apply(
 							getClass().getResourceAsStream("/testInstall.json"));
 				}
@@ -56,6 +60,116 @@ public class TestJdkInstaller extends BaseTest {
 		} finally {
 			FileUtils.deletePath(tmpJdk);
 		}
+	}
+
+	@Test
+	void testDistros() throws IOException {
+		RemoteAccessProvider rap = new RemoteAccessProvider() {
+			@Override
+			public Path downloadFromUrl(String url) throws IOException {
+				throw new IOException("We shouldn't get here");
+			}
+
+			@Override
+			public <T> T resultFromUrl(
+					String url, Function<InputStream, T> streamToObject) throws UnsupportedEncodingException {
+				assertThat(url, is(FoojayJdkInstaller.FOOJAY_JDK_DISTROS_URL));
+				return streamToObject.apply(
+						getClass().getResourceAsStream("/testDistros.json"));
+			}
+		};
+
+		JdkManager jm = jbangJdkManager(rap);
+		Set<Distro> distros = jm.listAvailableDistros();
+		assertThat(distros, hasSize(33));
+		assertThat(distros.stream().filter(d -> d.isGraalVM).collect(Collectors.toList()), hasSize(11));
+	}
+
+	@Test
+	void testAvailable() throws IOException {
+		RemoteAccessProvider rap = new RemoteAccessProvider() {
+			@Override
+			public Path downloadFromUrl(String url) throws IOException {
+				throw new IOException("We shouldn't get here");
+			}
+
+			@Override
+			public <T> T resultFromUrl(
+					String url, Function<InputStream, T> streamToObject) throws UnsupportedEncodingException {
+				String u = URLDecoder.decode(url, "UTF8");
+				assertThat(url, startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL));
+				assertThat(u, containsString("distro=temurin,aoj"));
+				assertThat(u, containsString("javafx_bundled=false"));
+				assertThat(u, containsString("package_type=jdk"));
+				assertThat(u, containsString("release_status=ga,ea"));
+				return streamToObject.apply(
+						getClass().getResourceAsStream("/testInstall.json"));
+			}
+		};
+
+		JdkManager jm = jbangJdkManager(rap);
+		List<Jdk> jdks = jm.listAvailableJdks();
+		assertThat(jdks, hasSize(18));
+	}
+
+	@Test
+	void testAvailableFiltered() throws IOException {
+		RemoteAccessProvider rap = new RemoteAccessProvider() {
+			@Override
+			public Path downloadFromUrl(String url) throws IOException {
+				throw new IOException("We shouldn't get here");
+			}
+
+			@Override
+			public <T> T resultFromUrl(
+					String url, Function<InputStream, T> streamToObject) throws UnsupportedEncodingException {
+				String u = URLDecoder.decode(url, "UTF8");
+				assertThat(url, startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL));
+				assertThat(u, containsString("distro=temurin"));
+				assertThat(u, containsString("javafx_bundled=true"));
+				assertThat(u, containsString("package_type=jre"));
+				assertThat(u, containsString("release_status=ea"));
+				return streamToObject.apply(
+						getClass().getResourceAsStream("/testInstall.json"));
+			}
+		};
+
+		JdkManager jm = jbangJdkManager(rap);
+		HashSet<String> tags = new HashSet<>();
+		tags.add("jre");
+		tags.add("javafx");
+		tags.add("ea");
+		List<Jdk> jdks = jm.listAvailableJdks("temurin", tags);
+		assertThat(jdks, hasSize(0));
+	}
+
+	@Test
+	void testAvailableFiltered2() throws IOException {
+		RemoteAccessProvider rap = new RemoteAccessProvider() {
+			@Override
+			public Path downloadFromUrl(String url) throws IOException {
+				throw new IOException("We shouldn't get here");
+			}
+
+			@Override
+			public <T> T resultFromUrl(
+					String url, Function<InputStream, T> streamToObject) throws UnsupportedEncodingException {
+				String u = URLDecoder.decode(url, "UTF8");
+				assertThat(url, startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL));
+				assertThat(u, containsString("distro=temurin"));
+				assertThat(u, containsString("javafx_bundled=false"));
+				assertThat(u, containsString("package_type=jdk"));
+				assertThat(u, containsString("release_status=ea"));
+				return streamToObject.apply(
+						getClass().getResourceAsStream("/testInstall.json"));
+			}
+		};
+
+		JdkManager jm = jbangJdkManager(rap);
+		HashSet<String> tags = new HashSet<>();
+		tags.add("ea");
+		List<Jdk> jdks = jm.listAvailableJdks("temurin", tags);
+		assertThat(jdks, hasSize(2));
 	}
 
 	protected JdkManager jbangJdkManager(RemoteAccessProvider rap) {

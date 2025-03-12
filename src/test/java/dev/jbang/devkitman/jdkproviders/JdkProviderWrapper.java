@@ -2,6 +2,7 @@ package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
 
@@ -52,8 +53,8 @@ public class JdkProviderWrapper implements JdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk> listAvailable() {
-		return provider.listAvailable();
+	public @NonNull List<Jdk> listAvailable(String distros, Set<String> tags) {
+		return provider.listAvailable(distros, tags);
 	}
 
 	@Override

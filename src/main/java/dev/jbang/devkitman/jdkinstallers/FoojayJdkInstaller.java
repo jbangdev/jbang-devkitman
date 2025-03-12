@@ -8,10 +8,10 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import dev.jbang.devkitman.Distro;
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.util.*;
@@ -33,13 +34,31 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	public static final String FOOJAY_JDK_DOWNLOAD_URL = "https://api.foojay.io/disco/v3.0/directuris?";
 	public static final String FOOJAY_JDK_VERSIONS_URL = "https://api.foojay.io/disco/v3.0/packages?";
+	public static final String FOOJAY_JDK_DISTROS_URL = "https://api.foojay.io/disco/v3.0/distributions?include_versions=false&include_synonyms=false";
 
 	private static final Logger LOGGER = Logger.getLogger(FoojayJdkInstaller.class.getName());
+
+	public static class DistroResult {
+		public String api_parameter;
+		public Boolean build_of_openjdk;
+		public Boolean build_of_graalvm;
+		public Boolean available;
+		public Boolean maintained;
+	}
+
+	public static class DistrosResponse {
+		public List<DistroResult> result;
+	}
 
 	public static class JdkResult {
 		public String java_version;
 		public int major_version;
 		public String release_status;
+		public String distribution;
+		public String package_type;
+		public String operating_system;
+		public String architecture;
+		public Boolean javafx_bundled;
 	}
 
 	public static class VersionsResponse {
@@ -57,22 +76,34 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	@NonNull
 	@Override
-	public List<Jdk> listAvailable() {
+	public List<Distro> listDistros() {
 		try {
-			Set<Jdk> result = new LinkedHashSet<>();
-			Consumer<String> addJdk = version -> {
-				result.add(jdkFactory.createJdk(jdkFactory.jdkId(version), null, version));
-			};
-			String distro = getDistro();
-			if (distro == null) {
-				VersionsResponse res = readJsonFromUrl(
-						getVersionsUrl(OsUtils.getOS(), OsUtils.getArch(), "temurin,aoj"));
-				filterEA(res.result).forEach(jdk -> addJdk.accept(jdk.java_version));
-			} else {
-				VersionsResponse res = readJsonFromUrl(getVersionsUrl(OsUtils.getOS(), OsUtils.getArch(), distro));
-				filterEA(res.result).forEach(jdk -> addJdk.accept(jdk.java_version));
+			DistrosResponse res = readJsonFromUrl(FOOJAY_JDK_DISTROS_URL, DistrosResponse.class);
+			List<Distro> distros = res.result.stream()
+				.filter(d -> d.api_parameter != null && d.available == Boolean.TRUE)
+				.map(d -> new Distro(d.api_parameter, d.build_of_graalvm == Boolean.TRUE))
+				.collect(Collectors.toList());
+			return Collections.unmodifiableList(distros);
+		} catch (IOException e) {
+			LOGGER.log(Level.FINE, "Couldn't list available distributions", e);
+		}
+		return Collections.emptyList();
+	}
+
+	@NonNull
+	@Override
+	public List<Jdk> listAvailable(String distros, Set<String> tags) {
+		try {
+			if (distros == null) {
+				distros = "temurin,aoj";
 			}
-			// result.sort(Jdk::compareTo);
+			Set<String> ltags = tags != null ? tags : Collections.emptySet();
+			VersionsResponse res = readJsonFromUrl(getVersionsUrl(OsUtils.getOS(), OsUtils.getArch(), distros, ltags),
+					VersionsResponse.class);
+			Set<Jdk> result = filterEA(res.result)
+				.map(this::toJdk)
+				.filter(jdk -> jdk.tags().containsAll(ltags))
+				.collect(Collectors.toSet());
 			return Collections.unmodifiableList(new ArrayList<>(result));
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
@@ -80,11 +111,32 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		return Collections.emptyList();
 	}
 
-	private VersionsResponse readJsonFromUrl(String url) throws IOException {
+	private Jdk toJdk(JdkResult res) {
+		HashSet<String> jdkTags = new HashSet<>();
+		if (res.release_status != null && !res.release_status.isEmpty()) {
+			jdkTags.add(res.release_status);
+		}
+		if (res.package_type != null && !res.package_type.isEmpty()) {
+			jdkTags.add(res.package_type);
+		}
+		if (res.operating_system != null && !res.operating_system.isEmpty()) {
+			jdkTags.add(res.operating_system);
+		}
+		if (res.architecture != null && !res.architecture.isEmpty()) {
+			jdkTags.add(res.architecture);
+		}
+		if (res.javafx_bundled == Boolean.TRUE) {
+			jdkTags.add("javafx");
+		}
+		return jdkFactory.createJdk(jdkFactory.jdkId(res.java_version), null, res.java_version, res.distribution,
+				jdkTags);
+	}
+
+	private <T> T readJsonFromUrl(String url, Class<T> klass) throws IOException {
 		return remoteAccessProvider.resultFromUrl(url, is -> {
 			try (InputStream ignored = is) {
 				Gson parser = new GsonBuilder().create();
-				return parser.fromJson(new InputStreamReader(is), VersionsResponse.class);
+				return parser.fromJson(new InputStreamReader(is), klass);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -93,7 +145,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	// Filter out any EA releases for which a GA with
 	// the same major version exists
-	private List<JdkResult> filterEA(List<JdkResult> jdks) {
+	private Stream<JdkResult> filterEA(List<JdkResult> jdks) {
 		Set<Integer> GAs = jdks.stream()
 			.filter(jdk -> jdk.release_status.equals("ga"))
 			.map(jdk -> jdk.major_version)
@@ -112,8 +164,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 						} else {
 							return false;
 						}
-					})
-			.collect(Collectors.toList());
+					});
 	}
 
 	@NonNull
@@ -124,7 +175,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 				Level.INFO,
 				"Downloading JDK {0}. Be patient, this can take several minutes...",
 				version);
-		String url = getDownloadUrl(version, OsUtils.getOS(), OsUtils.getArch(), getDistro());
+		String url = getDownloadUrl(version, OsUtils.getOS(), OsUtils.getArch(), jdk.distro(), jdk.tags());
 		LOGGER.log(Level.FINE, "Downloading {0}", url);
 		Path jdkTmpDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".tmp");
 		Path jdkOldDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".old");
@@ -147,7 +198,8 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			if (!fullVersion.isPresent()) {
 				throw new IllegalStateException("Cannot obtain version of recently installed JDK");
 			}
-			return jdkFactory.createJdk(jdk.id(), jdkDir, fullVersion.get());
+			Set<String> tags = JavaUtils.readTagsFromReleaseFile(jdkDir);
+			return jdkFactory.createJdk(jdk.id(), jdkDir, fullVersion.get(), jdk.distro(), tags);
 		} catch (Exception e) {
 			FileUtils.deletePath(jdkTmpDir);
 			if (!Files.isDirectory(jdkDir) && Files.isDirectory(jdkOldDir)) {
@@ -177,16 +229,16 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	private static String getDownloadUrl(
-			int version, OsUtils.OS os, OsUtils.Arch arch, String distro) {
-		return FOOJAY_JDK_DOWNLOAD_URL + getUrlParams(version, os, arch, distro);
+			int version, OsUtils.OS os, OsUtils.Arch arch, String distro, @NonNull Set<String> tags) {
+		return FOOJAY_JDK_DOWNLOAD_URL + getUrlParams(version, os, arch, distro, tags);
 	}
 
-	private static String getVersionsUrl(OsUtils.OS os, OsUtils.Arch arch, String distro) {
-		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(null, os, arch, distro);
+	private static String getVersionsUrl(OsUtils.OS os, OsUtils.Arch arch, String distro, @NonNull Set<String> tags) {
+		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(null, os, arch, distro, tags);
 	}
 
 	private static String getUrlParams(
-			Integer version, OsUtils.OS os, OsUtils.Arch arch, String distro) {
+			Integer version, OsUtils.OS os, OsUtils.Arch arch, String distro, @NonNull Set<String> tags) {
 		Map<String, String> params = new HashMap<>();
 		if (version != null) {
 			params.put("version", String.valueOf(version));
@@ -201,6 +253,26 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		}
 		params.put("distro", distro);
 
+		if (tags.contains("javafx")) {
+			params.put("javafx_bundled", "true");
+		} else {
+			params.put("javafx_bundled", "false");
+		}
+
+		if (tags.contains("ea")) {
+			params.put("release_status", "ea");
+		} else if (tags.contains("ga")) {
+			params.put("release_status", "ga");
+		} else {
+			params.put("release_status", "ga,ea");
+		}
+
+		if (tags.contains("jre")) {
+			params.put("package_type", "jre");
+		} else {
+			params.put("package_type", "jdk");
+		}
+
 		String archiveType;
 		if (os == OsUtils.OS.windows) {
 			archiveType = "zip";
@@ -210,7 +282,6 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		params.put("archive_type", archiveType);
 
 		params.put("architecture", arch.name());
-		params.put("package_type", "jdk");
 		params.put("operating_system", os.name());
 
 		if (os == OsUtils.OS.windows) {
@@ -221,9 +292,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			params.put("libc_type", "glibc");
 		}
 
-		params.put("javafx_bundled", "false");
 		params.put("latest", "available");
-		params.put("release_status", "ga,ea");
 		params.put("directly_downloadable", "true");
 
 		return urlEncodeUTF8(params);
@@ -256,14 +325,10 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		return JavaUtils.parseJavaVersion(jdk);
 	}
 
-	// TODO refactor
-	private static String getDistro() {
-		return null;
-	}
-
 	public interface JdkFactory {
 		String jdkId(String name);
 
-		Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version);
+		Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version, String distro,
+				@NonNull Set<String> tags);
 	}
 }

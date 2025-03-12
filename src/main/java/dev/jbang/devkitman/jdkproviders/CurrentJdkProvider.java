@@ -38,7 +38,7 @@ public class CurrentJdkProvider extends BaseJdkProvider {
 			Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(jdkHome);
 			if (version.isPresent()) {
 				return Collections.singletonList(
-						createJdk(Discovery.PROVIDER_ID, jdkHome, version.get(), false));
+						createJdk(Discovery.PROVIDER_ID, jdkHome, version.get(), false, null, Collections.emptySet()));
 			}
 		}
 		return Collections.emptyList();

@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,7 +57,8 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdkPath);
 				}
-				return createJdk(idOrToken, null, version.get(), false);
+				Set<String> tags = JavaUtils.readTagsFromReleaseFile(jdkPath);
+				return createJdk(idOrToken, null, version.get(), false, null, tags);
 			}
 			return null;
 		} else {

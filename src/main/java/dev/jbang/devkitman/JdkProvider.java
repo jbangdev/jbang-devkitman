@@ -20,8 +20,13 @@ import org.jspecify.annotations.Nullable;
  */
 public interface JdkProvider {
 
-	default Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version, boolean fixedVersion) {
-		return new Jdk.Default(this, id, home, version, fixedVersion);
+	default Jdk createJdk(@NonNull String id,
+			@Nullable Path home,
+			@NonNull String version,
+			boolean fixedVersion,
+			String distro,
+			@NonNull Set<String> tags) {
+		return new Jdk.Default(this, id, home, version, fixedVersion, distro, tags);
 	}
 
 	@NonNull
@@ -135,16 +140,33 @@ public interface JdkProvider {
 	}
 
 	/**
+	 * This method returns a list of distributions that are available for
+	 * installation. The list can be empty if the provider does not support
+	 * selecting distributions.
+	 *
+	 * @return List of distribution names
+	 */
+	@NonNull
+	default List<Distro> listDistros() {
+		throw new UnsupportedOperationException(
+				"Listing available distributions is not supported by " + getClass().getName());
+	}
+
+	/**
 	 * This method returns a set of JDKs that are available for installation.
 	 * Implementations might set the <code>home</code> field of the JDK objects if
 	 * the respective JDK is currently installed on the user's system, but only if
 	 * they can ensure that it's the exact same version, otherwise they should just
 	 * leave the field <code>null</code>.
 	 *
+	 * @param distros Comma separated list of distribution names to look for. Can be
+	 *                null to use a default selection defined by the installer. Use
+	 *                an empty string to list all.
+	 * @param tags    The tags to filter the JDKs by. Can be null to list all.
 	 * @return List of <code>Jdk</code> objects
 	 */
 	@NonNull
-	default List<Jdk> listAvailable() {
+	default List<Jdk> listAvailable(String distros, Set<String> tags) {
 		throw new UnsupportedOperationException(
 				"Listing available JDKs is not supported by " + getClass().getName());
 	}
@@ -164,7 +186,7 @@ public interface JdkProvider {
 	 */
 	@Nullable
 	default Jdk getAvailableByIdOrToken(String idOrToken) {
-		return JdkManager.getJdkBy(listAvailable().stream(), Jdk.Predicates.id(idOrToken))
+		return JdkManager.getJdkBy(listAvailable(null, null).stream(), Jdk.Predicates.id(idOrToken))
 			.orElse(null);
 	}
 

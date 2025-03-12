@@ -8,10 +8,7 @@ import java.util.*;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-import dev.jbang.devkitman.Jdk;
-import dev.jbang.devkitman.JdkDiscovery;
-import dev.jbang.devkitman.JdkInstaller;
-import dev.jbang.devkitman.JdkProvider;
+import dev.jbang.devkitman.*;
 import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
@@ -46,8 +43,14 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 
 	@NonNull
 	@Override
-	public List<Jdk> listAvailable() {
-		return jdkInstaller.listAvailable();
+	public List<Distro> listDistros() {
+		return jdkInstaller.listDistros();
+	}
+
+	@NonNull
+	@Override
+	public List<Jdk> listAvailable(String distros, Set<String> tags) {
+		return jdkInstaller.listAvailable(distros, tags);
 	}
 
 	@Override
@@ -68,8 +71,9 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 	}
 
 	@Override
-	public Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version) {
-		return super.createJdk(id, home, version, true);
+	public Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version, String distro,
+			@NonNull Set<String> tags) {
+		return super.createJdk(id, home, version, true, distro, tags);
 	}
 
 	@Nullable

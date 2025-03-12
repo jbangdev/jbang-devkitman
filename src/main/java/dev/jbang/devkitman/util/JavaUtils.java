@@ -3,10 +3,11 @@ package dev.jbang.devkitman.util;
 import static java.lang.System.getenv;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -134,4 +135,39 @@ public class JavaUtils {
 		}
 		return jdkHome;
 	}
+
+	public static Set<String> readTagsFromReleaseFile(Path home) {
+		Set<String> tags = new HashSet<>();
+		try {
+			Properties props = new Properties();
+			try (InputStream in = Files.newInputStream(home.resolve("release"))) {
+				props.load(in);
+			}
+
+			String osName = props.getProperty("OS_NAME");
+			if (osName != null) {
+				String os = osName.toLowerCase();
+				if (os.contains("darwin")) {
+					tags.add("macos");
+				} else {
+					tags.add(os);
+				}
+			}
+
+			String osArch = props.getProperty("OS_ARCH");
+			if (osArch != null) {
+				tags.add(osArch.toLowerCase());
+			}
+
+			if (OsUtils.searchPath("javac", home.resolve("bin").toString()) != null) {
+				tags.add("jdk");
+			} else {
+				tags.add("jre");
+			}
+		} catch (IOException e) {
+			LOGGER.fine("Unable to read 'release' file in path: " + home);
+		}
+		return tags;
+	}
+
 }
