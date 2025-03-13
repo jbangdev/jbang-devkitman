@@ -8,8 +8,17 @@ plugins {
 
 group = 'dev.jbang'
 
-sourceCompatibility = '8'
-targetCompatibility = '8'
+def javaVersion = System.getProperty('java.version')
+def majorVersion = javaVersion.split('\\.')[0].toInteger()
+if (majorVersion < 11) {
+	throw new GradleException("""
+		⚠️ This build requires Java 11 or newer but you're using Java ${javaVersion}
+		Please use JAVA_HOME with Java 11 or newer to run this build.
+		Current JAVA_HOME: ${System.getProperty('java.home')}.
+		If you have jbang installed, you can run it with:
+		eval \$(jbang jdk java-env 11+)
+	""".stripIndent())
+}
 
 javadoc {
 	options.encoding = 'UTF-8'
@@ -24,9 +33,11 @@ repositories {
 java {
 	withJavadocJar()
 	withSourcesJar()
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(11)
-	}
+}
+
+compileJava {
+	options.encoding = 'UTF-8'
+	options.release = 8;
 }
 
 versioner {
