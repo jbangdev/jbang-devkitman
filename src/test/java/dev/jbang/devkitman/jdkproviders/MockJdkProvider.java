@@ -2,7 +2,9 @@ package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,16 +29,16 @@ public class MockJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk> listAvailable() {
+	public @NonNull List<Jdk> listAvailable(String distros, Set<String> tags) {
 		return Arrays.stream(versions)
-			.mapToObj(v -> createJdk(v + "-dummy", null, v + ".0.7", true))
+			.mapToObj(v -> createJdk(v + "-dummy", null, v + ".0.7", true, null, Collections.emptySet()))
 			.collect(Collectors.toList());
 	}
 
 	@Override
 	public @NonNull Jdk install(@NonNull Jdk jdk) {
 		Path jdkPath = mockJdk.apply(jdk.majorVersion());
-		return createJdk(jdk.id(), jdkPath, jdk.version(), true);
+		return createJdk(jdk.id(), jdkPath, jdk.version(), true, null, Collections.emptySet());
 	}
 
 	@Override

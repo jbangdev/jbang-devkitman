@@ -527,9 +527,19 @@ public class JdkManager {
 			.max(Jdk::compareTo);
 	}
 
-	public List<Jdk> listAvailableJdks() {
+	public Set<Distro> listAvailableDistros() {
 		return providers(JdkProvider.Predicates.canUpdate)
-			.flatMap(p -> p.listAvailable().stream())
+			.flatMap(p -> p.listDistros().stream())
+			.collect(Collectors.toSet());
+	}
+
+	public List<Jdk> listAvailableJdks() {
+		return listAvailableJdks(null, null);
+	}
+
+	public List<Jdk> listAvailableJdks(String distros, Set<String> tags) {
+		return providers(JdkProvider.Predicates.canUpdate)
+			.flatMap(p -> p.listAvailable(distros, tags).stream())
 			.collect(Collectors.toList());
 	}
 
@@ -563,7 +573,9 @@ public class JdkManager {
 						DefaultJdkProvider.Discovery.PROVIDER_ID,
 						jdk.home(),
 						jdk.version(),
-						false);
+						false,
+						jdk.distro(),
+						jdk.tags());
 				defaultProvider.install(newDefJdk);
 				LOGGER.log(Level.INFO, "Default JDK set to {0}", jdk);
 			}
