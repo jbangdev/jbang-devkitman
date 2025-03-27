@@ -123,8 +123,8 @@ public class JdkManager {
 	 * being returned is actually installed. It will perform an installation if
 	 * necessary.
 	 *
-	 * @param versionOrId A version pattern, id or <code>null</code>
-	 * @param providerFilter   Only return JDKs from providers that match the filter
+	 * @param versionOrId    A version pattern, id or <code>null</code>
+	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return A <code>Jdk</code> object
 	 * @throws IllegalArgumentException If no JDK could be found at all or if one
 	 *                                  failed to install
@@ -562,7 +562,8 @@ public class JdkManager {
 				Jdk newDefJdk = defaultProvider.createJdk(
 						DefaultJdkProvider.Discovery.PROVIDER_ID,
 						jdk.home(),
-						jdk.version());
+						jdk.version(),
+						false);
 				defaultProvider.install(newDefJdk);
 				LOGGER.log(Level.INFO, "Default JDK set to {0}", jdk);
 			}

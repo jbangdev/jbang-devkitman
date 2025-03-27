@@ -39,7 +39,7 @@ public class JavaHomeJdkProvider extends BaseJdkProvider {
 			Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(jdkHome);
 			if (version.isPresent()) {
 				return Collections.singletonList(
-						createJdk(Discovery.PROVIDER_ID, jdkHome, version.get()));
+						createJdk(Discovery.PROVIDER_ID, jdkHome, version.get(), false));
 			}
 		}
 		return Collections.emptyList();

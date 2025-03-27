@@ -30,6 +30,11 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		super(jdksRoot);
 	}
 
+	@Nullable
+	protected Jdk createJdk(Path home) {
+		return createJdk(home, false);
+	}
+
 	@Override
 	public @NonNull String description() {
 		return "Any unmanaged JDKs that the user has linked to.";
@@ -51,7 +56,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdkPath);
 				}
-				return createJdk(idOrToken, null, version.get());
+				return createJdk(idOrToken, null, version.get(), false);
 			}
 			return null;
 		} else {

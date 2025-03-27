@@ -69,7 +69,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 
 	@Override
 	public Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version) {
-		return super.createJdk(id, home, version);
+		return super.createJdk(id, home, version, true);
 	}
 
 	@Nullable

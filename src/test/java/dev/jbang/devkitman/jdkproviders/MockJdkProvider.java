@@ -29,14 +29,14 @@ public class MockJdkProvider extends BaseFoldersJdkProvider {
 	@Override
 	public @NonNull List<Jdk> listAvailable() {
 		return Arrays.stream(versions)
-			.mapToObj(v -> createJdk(v + "-dummy", null, v + ".0.7"))
+			.mapToObj(v -> createJdk(v + "-dummy", null, v + ".0.7", true))
 			.collect(Collectors.toList());
 	}
 
 	@Override
 	public @NonNull Jdk install(@NonNull Jdk jdk) {
 		Path jdkPath = mockJdk.apply(jdk.majorVersion());
-		return createJdk(jdk.id(), jdkPath, jdk.version());
+		return createJdk(jdk.id(), jdkPath, jdk.version(), true);
 	}
 
 	@Override

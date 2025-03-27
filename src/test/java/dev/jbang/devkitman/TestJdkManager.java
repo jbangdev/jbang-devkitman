@@ -55,6 +55,9 @@ public class TestJdkManager extends BaseTest {
 		assertThat(
 				jdks.stream().map(Jdk::version).collect(Collectors.toList()),
 				containsInAnyOrder("11.0.7", "11.0.7", "12.0.7", "13.0.7"));
+		assertThat(
+				jdks.stream().map(Jdk::isFixedVersion).collect(Collectors.toList()),
+				containsInAnyOrder(false, true, true, false));
 	}
 
 	@Test

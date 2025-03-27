@@ -119,10 +119,15 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 
 	@Nullable
 	protected Jdk createJdk(Path home) {
+		return createJdk(home, true);
+	}
+
+	@Nullable
+	protected Jdk createJdk(Path home, boolean fixedVersion) {
 		String name = home.getFileName().toString();
 		Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(home);
 		if (version.isPresent() && acceptFolder(home)) {
-			return createJdk(jdkId(name), home, version.get());
+			return createJdk(jdkId(name), home, version.get(), fixedVersion);
 		}
 		return null;
 	}
