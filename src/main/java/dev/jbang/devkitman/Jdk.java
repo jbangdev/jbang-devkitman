@@ -12,25 +12,60 @@ import org.jspecify.annotations.Nullable;
 import dev.jbang.devkitman.util.JavaUtils;
 
 public interface Jdk extends Comparable<Jdk> {
+	/**
+	 * Returns the provider that is responsible for this JDK
+	 */
 	@NonNull
 	JdkProvider provider();
 
+	/**
+	 * Returns the id that is used to uniquely identify this JDK across all
+	 * providers
+	 */
 	@NonNull
 	String id();
 
+	/**
+	 * Returns the JDK's version
+	 */
 	@NonNull
 	String version();
 
+	/**
+	 * Determines if the JDK version is fixed or that it can change
+	 */
+	boolean isFixedVersion();
+
+	/**
+	 * The path to where the JDK is installed. Can be <code>null</code> which means
+	 * the JDK isn't currently installed by that provider
+	 */
 	@NonNull
 	Path home();
 
+	/**
+	 * Returns the major version of the JDK
+	 */
 	int majorVersion();
 
+	/**
+	 * Installs the JDK if it isn't already installed. If already installed it will
+	 * simply return the current object, if not it will return a new copy with
+	 * updated information (e.g. the home path will be set)
+	 * 
+	 * @return A <code>Jdk</code> object
+	 */
 	@NonNull
 	Jdk install();
 
+	/**
+	 * Uninstalls the JDK. If the JDK isn't installed it will do nothing
+	 */
 	void uninstall();
 
+	/**
+	 * Determines if this JDK is currently installed
+	 */
 	boolean isInstalled();
 
 	class Default implements Jdk {
@@ -40,6 +75,7 @@ public interface Jdk extends Comparable<Jdk> {
 		private final String id;
 		@NonNull
 		private final String version;
+		private final boolean fixedVersion;
 		@Nullable
 		private final Path home;
 		@NonNull
@@ -50,10 +86,12 @@ public interface Jdk extends Comparable<Jdk> {
 				@NonNull String id,
 				@Nullable Path home,
 				@NonNull String version,
+				boolean fixedVersion,
 				@NonNull String... tags) {
 			this.provider = provider;
 			this.id = id;
 			this.version = version;
+			this.fixedVersion = fixedVersion;
 			this.home = home;
 		}
 
@@ -63,27 +101,23 @@ public interface Jdk extends Comparable<Jdk> {
 			return provider;
 		}
 
-		/**
-		 * Returns the id that is used to uniquely identify this JDK across all
-		 * providers
-		 */
 		@Override
 		@NonNull
 		public String id() {
 			return id;
 		}
 
-		/** Returns the JDK's version */
 		@Override
 		@NonNull
 		public String version() {
 			return version;
 		}
 
-		/**
-		 * The path to where the JDK is installed. Can be <code>null</code> which means
-		 * the JDK isn't currently installed by that provider
-		 */
+		@Override
+		public boolean isFixedVersion() {
+			return fixedVersion;
+		}
+
 		@Override
 		@NonNull
 		public Path home() {
@@ -141,7 +175,8 @@ public interface Jdk extends Comparable<Jdk> {
 
 		@Override
 		public String toString() {
-			return majorVersion() + " (" + version + ", " + id + ", " + home + ")";
+			return majorVersion() + " (" + version + (isFixedVersion() ? " (fixed)" : " (dynamic)") + ", " + id + ", "
+					+ home + ")";
 		}
 	}
 
@@ -163,6 +198,10 @@ public interface Jdk extends Comparable<Jdk> {
 
 		public static Predicate<Jdk> forVersion(int version, boolean openVersion) {
 			return openVersion ? openVersion(version) : exactVersion(version);
+		}
+
+		public static Predicate<Jdk> fixedVersion() {
+			return Jdk::isFixedVersion;
 		}
 
 		public static Predicate<Jdk> id(String id) {

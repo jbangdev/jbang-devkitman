@@ -46,7 +46,7 @@ public class DefaultJdkProvider extends BaseJdkProvider {
 			Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(defaultJdkLink);
 			if (version.isPresent()) {
 				return Collections.singletonList(
-						createJdk(Discovery.PROVIDER_ID, defaultJdkLink, version.get()));
+						createJdk(Discovery.PROVIDER_ID, defaultJdkLink, version.get(), false));
 			}
 		}
 		return Collections.emptyList();
