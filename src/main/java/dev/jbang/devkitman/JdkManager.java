@@ -89,6 +89,10 @@ public class JdkManager {
 		}
 	}
 
+	public List<JdkProvider> providers() {
+		return providers;
+	}
+
 	@NonNull
 	private Stream<JdkProvider> providers(Predicate<JdkProvider> providerFilter) {
 		return providers.stream().filter(providerFilter);
