@@ -115,17 +115,33 @@ public class JdkManager {
 	 */
 	@NonNull
 	public Jdk getOrInstallJdk(String versionOrId) {
+		return getOrInstallJdk(versionOrId, JdkProvider.Predicates.all);
+	}
+
+	/**
+	 * This method is like <code>getJdk()</code> but will make sure that the JDK
+	 * being returned is actually installed. It will perform an installation if
+	 * necessary.
+	 *
+	 * @param versionOrId A version pattern, id or <code>null</code>
+	 * @param providerFilter   Only return JDKs from providers that match the filter
+	 * @return A <code>Jdk</code> object
+	 * @throws IllegalArgumentException If no JDK could be found at all or if one
+	 *                                  failed to install
+	 */
+	@NonNull
+	public Jdk getOrInstallJdk(String versionOrId, @NonNull Predicate<JdkProvider> providerFilter) {
 		if (versionOrId != null) {
 			if (JavaUtils.isRequestedVersion(versionOrId)) {
 				return getOrInstallJdkByVersion(
 						JavaUtils.minRequestedVersion(versionOrId),
 						JavaUtils.isOpenVersion(versionOrId),
-						JdkProvider.Predicates.all);
+						providerFilter);
 			} else {
-				return getOrInstallJdkById(versionOrId, JdkProvider.Predicates.all);
+				return getOrInstallJdkById(versionOrId, providerFilter);
 			}
 		} else {
-			return getOrInstallJdkByVersion(0, true, JdkProvider.Predicates.all);
+			return getOrInstallJdkByVersion(0, true, providerFilter);
 		}
 	}
 
