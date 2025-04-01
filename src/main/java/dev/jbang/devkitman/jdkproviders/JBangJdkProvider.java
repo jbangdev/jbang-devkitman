@@ -145,7 +145,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 		return dir;
 	}
 
-	private static Path getJBangConfigDir() {
+	public static Path getJBangConfigDir() {
 		Path dir;
 		String jd = System.getenv("JBANG_DIR");
 		if (jd != null) {

@@ -30,9 +30,13 @@ public class JdkManager {
 
 	private final JdkProvider defaultProvider;
 
+	/**
+	 * Creates a JDK manager that is configured exactly like the one used by JBang.
+	 */
 	public static JdkManager create() {
 		Path installPath = JBangJdkProvider.getJBangJdkDir();
 		JdkDiscovery.Config cfg = new JdkDiscovery.Config(installPath);
+		cfg.properties.put("link", JBangJdkProvider.getJBangConfigDir().resolve("currentjdk").toString());
 		return builder().providers(JdkProviders.instance().all(cfg)).build();
 	}
 
