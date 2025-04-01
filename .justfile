@@ -1,7 +1,8 @@
 open := if os() == "macos" { "open" } else if os() == "windows" { "start" } else { "xdg-open" }
+current_version := "0.1.4"
 
-#@default:
-#    just --choose
+default:
+    @ just -l
 
 # build without tests
 build:
@@ -15,12 +16,19 @@ test:
 opentest:
     {{open}} build/reports/tests/test/index.html
 
-# tag minor
+# tag code for minor version update
 tagminor:
     git commit --allow-empty -m "[minor] release"
+    just _updatetag
     ./gradlew tag
 
+# tag code for patch version update
 tagpatch:
     git commit --allow-empty -m "[patch] release"
+    just _updatetag
     ./gradlew tag
 
+# updates versions in files and amends the last commit
+_updatetag:
+    sed -i "s|{{current_version}}|$(./gradlew -q printVersion)|g" README.md samples/* .justfile
+    git commit --all --amend --no-edit

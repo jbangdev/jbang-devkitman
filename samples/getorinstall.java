@@ -1,5 +1,5 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS dev.jbang:devkitman:0.1.2
+//DEPS dev.jbang:devkitman:0.1.4
 
 class getorinstall {
 	public static void main(String[] args) {
