@@ -2,6 +2,7 @@ package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -81,7 +82,9 @@ public class DefaultJdkProvider extends BaseJdkProvider {
 
 		@Override
 		public JdkProvider create(Config config) {
-			return new DefaultJdkProvider(config.installPath.resolve(PROVIDER_ID));
+			String defaultLink = config.properties.computeIfAbsent("link",
+					k -> config.installPath.resolve(PROVIDER_ID).toString());
+			return new DefaultJdkProvider(Paths.get(defaultLink));
 		}
 	}
 }
