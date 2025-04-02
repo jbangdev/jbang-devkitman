@@ -91,22 +91,30 @@ public class FileUtils {
 	}
 
 	public static void deletePath(Path path) {
+		if (isLink(path)) {
+			LOGGER.log(Level.FINE, "Deleting link {0}", path);
+		} else if (Files.isDirectory(path)) {
+			LOGGER.log(Level.FINE, "Deleting folder {0}", path);
+		} else if (Files.exists(path)) {
+			LOGGER.log(Level.FINE, "Deleting file {0}", path);
+		} else if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
+			LOGGER.log(Level.FINE, "Deleting broken link {0}", path);
+		} else {
+			return;
+		}
+		deletePathQuiet(path);
+	}
+
+	public static void deletePathQuiet(Path path) {
 		try {
-			if (isLink(path)) {
-				LOGGER.log(Level.FINE, "Deleting link {0}", path);
-			} else if (Files.isDirectory(path)) {
-				LOGGER.log(Level.FINE, "Deleting folder {0}", path);
+			if (Files.isDirectory(path)) {
 				try (Stream<Path> s = Files.list(path)) {
-					s.forEach(FileUtils::deletePath);
+					s.forEach(FileUtils::deletePathQuiet);
 				}
-			} else if (Files.exists(path)) {
-				LOGGER.log(Level.FINE, "Deleting file {0}", path);
+				Files.delete(path);
 			} else if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
-				LOGGER.log(Level.FINE, "Deleting broken link {0}", path);
-			} else {
-				return;
+				Files.delete(path);
 			}
-			Files.delete(path);
 		} catch (Exception e) {
 			throw new IllegalStateException("Failed to delete " + path, e);
 		}
