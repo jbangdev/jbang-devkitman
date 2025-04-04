@@ -6,6 +6,6 @@ import dev.jbang.devkitman.*;
 class listinstalled {
 	public static void main(String[] args) {
 		JdkManager jdkManager = JdkManager.create();
-		System.out.println("Installed: " + jdkManager.listInstalledJdks());
+		jdkManager.listInstalledJdks().forEach(System.out::println);
 	}
 }
