@@ -538,7 +538,7 @@ public class JdkManager {
 	}
 
 	public List<Jdk> listInstalledJdks() {
-		return listInstalledJdks(JdkProvider.Predicates.all).sorted().collect(Collectors.toList());
+		return listInstalledJdks(JdkProvider.Predicates.all).collect(Collectors.toList());
 	}
 
 	private Stream<Jdk> listInstalledJdks(Predicate<JdkProvider> providerFilter) {

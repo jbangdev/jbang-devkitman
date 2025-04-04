@@ -175,7 +175,7 @@ public interface Jdk extends Comparable<Jdk> {
 
 		@Override
 		public String toString() {
-			return majorVersion() + " (" + version + (isFixedVersion() ? " (fixed)" : " (dynamic)") + ", " + id + ", "
+			return majorVersion() + " (" + version + (isFixedVersion() ? " [fixed]" : " [dynamic]") + ", " + id + ", "
 					+ home + ")";
 		}
 	}
