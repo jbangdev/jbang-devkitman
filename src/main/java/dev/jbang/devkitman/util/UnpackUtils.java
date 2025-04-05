@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -16,6 +18,7 @@ import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 public class UnpackUtils {
+	private static final Logger LOGGER = Logger.getLogger(UnpackUtils.class.getName());
 
 	public static void unpackJdk(Path archive, Path outputDir) throws IOException {
 		String name = archive.toString().toLowerCase(Locale.ENGLISH);
@@ -124,8 +127,7 @@ public class UnpackUtils {
 			Path targz, Path outputDir, boolean stripRootFolder, Path selectFolder)
 			throws IOException {
 		try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(
-				new GzipCompressorInputStream(
-						Files.newInputStream(targz.toFile().toPath())))) {
+				new GzipCompressorInputStream(Files.newInputStream(targz.toFile().toPath())))) {
 			TarArchiveEntry targzEntry;
 			while ((targzEntry = tarArchiveInputStream.getNextEntry()) != null) {
 				Path entry = Paths.get(targzEntry.getName()).normalize();
@@ -148,10 +150,19 @@ public class UnpackUtils {
 				}
 				if (targzEntry.isDirectory()) {
 					Files.createDirectories(entry);
-				} else {
-					if (!Files.isDirectory(entry.getParent())) {
-						Files.createDirectories(entry.getParent());
+				} else if (targzEntry.isSymbolicLink()) {
+					Path linkTarget = Paths.get(targzEntry.getLinkName());
+					Files.createDirectories(entry.getParent());
+					if (!Files.exists(entry)) {
+						try {
+							Files.createSymbolicLink(entry, linkTarget);
+						} catch (IOException e) {
+							LOGGER.log(Level.WARNING, "Could not create symbolic link " + entry + " -> "
+									+ linkTarget + " due to " + e.getMessage(), e);
+						}
 					}
+				} else {
+					Files.createDirectories(entry.getParent());
 					Files.copy(tarArchiveInputStream, entry, StandardCopyOption.REPLACE_EXISTING);
 					int mode = targzEntry.getMode();
 					if (mode != 0 && !OsUtils.isWindows()) {
