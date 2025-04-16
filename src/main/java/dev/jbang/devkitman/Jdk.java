@@ -1,10 +1,7 @@
 package dev.jbang.devkitman;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
 import org.jspecify.annotations.NonNull;
@@ -88,6 +85,10 @@ public interface Jdk extends Comparable<Jdk> {
 		@NonNull
 		private final Set<String> tags;
 
+		enum Tags {
+			Jre, Jdk, Graalvm, Native, Javafx
+		}
+
 		Default(
 				@NonNull JdkProvider provider,
 				@NonNull String id,
@@ -100,7 +101,9 @@ public interface Jdk extends Comparable<Jdk> {
 			this.version = version;
 			this.fixedVersion = fixedVersion;
 			this.home = home;
-			this.tags = Collections.unmodifiableSet(new HashSet<>(tags));
+			TreeSet<String> ts = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+			ts.addAll(tags);
+			this.tags = Collections.unmodifiableSet(ts);
 		}
 
 		@Override
@@ -190,7 +193,7 @@ public interface Jdk extends Comparable<Jdk> {
 		@Override
 		public String toString() {
 			return majorVersion() + " (" + version + (isFixedVersion() ? " [fixed]" : " [dynamic]") + ", " + id + ", "
-					+ home + ")";
+					+ home + ", " + tags + "))";
 		}
 	}
 
