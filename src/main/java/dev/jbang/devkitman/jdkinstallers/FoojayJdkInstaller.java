@@ -143,11 +143,11 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			}
 			Files.move(jdkTmpDir, jdkDir);
 			FileUtils.deletePath(jdkOldDir);
-			Optional<String> fullVersion = JavaUtils.resolveJavaVersionStringFromPath(jdkDir);
-			if (!fullVersion.isPresent()) {
+			Jdk newJdk = jdkFactory.createJdk(jdk.id(), jdkDir, null);
+			if (newJdk == null) {
 				throw new IllegalStateException("Cannot obtain version of recently installed JDK");
 			}
-			return jdkFactory.createJdk(jdk.id(), jdkDir, fullVersion.get());
+			return newJdk;
 		} catch (Exception e) {
 			FileUtils.deletePath(jdkTmpDir);
 			if (!Files.isDirectory(jdkDir) && Files.isDirectory(jdkOldDir)) {
@@ -264,6 +264,6 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	public interface JdkFactory {
 		String jdkId(String name);
 
-		Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version);
+		Jdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version);
 	}
 }

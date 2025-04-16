@@ -20,8 +20,9 @@ import org.jspecify.annotations.Nullable;
  */
 public interface JdkProvider {
 
-	default Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version, boolean fixedVersion) {
-		return new Jdk.Default(this, id, home, version, fixedVersion);
+	@Nullable
+	default Jdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version, boolean fixedVersion) {
+		return manager().createJdk(this, id, home, version, fixedVersion, null);
 	}
 
 	@NonNull

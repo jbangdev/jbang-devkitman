@@ -36,7 +36,7 @@ public class ScoopJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	protected boolean acceptFolder(Path jdkFolder) {
+	protected boolean acceptFolder(@NonNull Path jdkFolder) {
 		return jdkFolder.getFileName().startsWith("openjdk") && super.acceptFolder(jdkFolder);
 	}
 

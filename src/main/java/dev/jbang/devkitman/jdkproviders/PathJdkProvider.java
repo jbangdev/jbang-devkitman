@@ -3,14 +3,12 @@ package dev.jbang.devkitman.jdkproviders;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import org.jspecify.annotations.NonNull;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkProvider;
-import dev.jbang.devkitman.util.JavaUtils;
 import dev.jbang.devkitman.util.OsUtils;
 
 /**
@@ -40,10 +38,9 @@ public class PathJdkProvider extends BaseJdkProvider {
 			jdkHome = javac.getParent().getParent();
 		}
 		if (jdkHome != null) {
-			Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(jdkHome);
-			if (version.isPresent()) {
-				return Collections.singletonList(
-						createJdk(Discovery.PROVIDER_ID, jdkHome, version.get(), false));
+			Jdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false);
+			if (jdk != null) {
+				return Collections.singletonList(jdk);
 			}
 		}
 		return Collections.emptyList();

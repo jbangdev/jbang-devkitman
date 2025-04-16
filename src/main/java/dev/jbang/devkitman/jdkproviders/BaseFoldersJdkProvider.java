@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,7 +17,6 @@ import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.util.JavaUtils;
-import dev.jbang.devkitman.util.OsUtils;
 
 public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	protected final Path jdksRoot;
@@ -125,9 +123,8 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	@Nullable
 	protected Jdk createJdk(Path home, boolean fixedVersion) {
 		String name = home.getFileName().toString();
-		Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(home);
-		if (version.isPresent() && acceptFolder(home)) {
-			return createJdk(jdkId(name), home, version.get(), fixedVersion);
+		if (acceptFolder(home)) {
+			return createJdk(jdkId(name), home, null, fixedVersion);
 		}
 		return null;
 	}
@@ -136,8 +133,8 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 		return name + "-" + name();
 	}
 
-	protected boolean acceptFolder(Path jdkFolder) {
-		return OsUtils.searchPath("javac", jdkFolder.resolve("bin").toString()) != null;
+	protected boolean acceptFolder(@NonNull Path jdkFolder) {
+		return JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	@Override
