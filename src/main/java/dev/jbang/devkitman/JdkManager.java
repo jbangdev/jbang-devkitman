@@ -625,20 +625,20 @@ public class JdkManager {
 		}
 		Set<String> tags = new HashSet<>();
 		if (JavaUtils.hasJavacCmd(home)) {
-			tags.add("jdk");
+			tags.add(Jdk.Default.Tags.Jdk.name());
 		} else if (JavaUtils.hasJavaCmd(home)) {
-			tags.add("jre");
+			tags.add(Jdk.Default.Tags.Jre.name());
 		}
 		Optional<String> graalVersion = JavaUtils.readGraalVMVersionStringFromReleaseFile(home);
 		if (graalVersion.isPresent()) {
-			tags.add("graalvm");
+			tags.add(Jdk.Default.Tags.Graalvm.name());
 			if (JavaUtils.hasNativeImageCmd(home)) {
-				tags.add("native");
+				tags.add(Jdk.Default.Tags.Native.name());
 			}
 		}
 		Path javafxProps = home.resolve("lib").resolve("javafx.properties");
 		if (Files.exists(javafxProps)) {
-			tags.add("javafx");
+			tags.add(Jdk.Default.Tags.Javafx.name());
 		}
 		return tags;
 	}
