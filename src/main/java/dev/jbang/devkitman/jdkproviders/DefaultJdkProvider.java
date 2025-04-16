@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import org.jspecify.annotations.NonNull;
 
@@ -13,7 +12,6 @@ import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
-import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * This JDK provider returns the "default" JDK if it was set. This is not a JDK
@@ -44,10 +42,9 @@ public class DefaultJdkProvider extends BaseJdkProvider {
 	@Override
 	public List<Jdk> listInstalled() {
 		if (Files.isDirectory(defaultJdkLink)) {
-			Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(defaultJdkLink);
-			if (version.isPresent()) {
-				return Collections.singletonList(
-						createJdk(Discovery.PROVIDER_ID, defaultJdkLink, version.get(), false));
+			Jdk jdk = createJdk(Discovery.PROVIDER_ID, defaultJdkLink, null, false);
+			if (jdk != null) {
+				return Collections.singletonList(jdk);
 			}
 		}
 		return Collections.emptyList();

@@ -36,7 +36,7 @@ public class LinuxJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	protected boolean acceptFolder(Path jdkFolder) {
+	protected boolean acceptFolder(@NonNull Path jdkFolder) {
 		return super.acceptFolder(jdkFolder) && !isSameFolderLink(jdkFolder);
 	}
 

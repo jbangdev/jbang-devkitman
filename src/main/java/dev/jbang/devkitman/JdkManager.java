@@ -341,6 +341,19 @@ public class JdkManager {
 	 * or id. Will return <code>null</code> if no JDK of that version or id is
 	 * currently installed.
 	 *
+	 * @param versionOrId A version pattern, id or <code>null</code>
+	 * @return A <code>Jdk</code> object or <code>null</code>
+	 */
+	@Nullable
+	public Jdk getInstalledJdk(String versionOrId) {
+		return getInstalledJdk(versionOrId, JdkProvider.Predicates.all);
+	}
+
+	/**
+	 * Returns an <code>Jdk</code> object for an installed JDK of the given version
+	 * or id. Will return <code>null</code> if no JDK of that version or id is
+	 * currently installed.
+	 *
 	 * @param versionOrId    A version pattern, id or <code>null</code>
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return A <code>Jdk</code> object or <code>null</code>
@@ -563,11 +576,17 @@ public class JdkManager {
 			// Check if the new jdk exists and isn't the same as the current default
 			if (jdk.isInstalled() && !jdk.equals(defJdk)) {
 				// Special syntax for "installing" the default JDK
-				Jdk newDefJdk = defaultProvider.createJdk(
+				Jdk newDefJdk = createJdk(
+						defaultProvider,
 						DefaultJdkProvider.Discovery.PROVIDER_ID,
 						jdk.home(),
 						jdk.version(),
-						false);
+						false,
+						jdk.tags());
+				if (newDefJdk == null) {
+					throw new IllegalArgumentException(
+							"Unable to determine Java version in given path: " + jdk.home());
+				}
 				defaultProvider.install(newDefJdk);
 				LOGGER.log(Level.INFO, "Default JDK set to {0}", jdk);
 			}
@@ -585,6 +604,43 @@ public class JdkManager {
 		Path currentJdk = Paths.get(System.getProperty("java.home"));
 		return providers(JdkProvider.Predicates.canUpdate)
 			.anyMatch(p -> p.getInstalledByPath(currentJdk) != null);
+	}
+
+	@Nullable
+	public Jdk createJdk(@NonNull JdkProvider provider, @NonNull String id, @Nullable Path home,
+			@Nullable String version, boolean fixedVersion, @Nullable Set<String> tags) {
+		Optional<String> v = version != null ? Optional.of(version) : JavaUtils.resolveJavaVersionStringFromPath(home);
+		if (v.isPresent()) {
+			Set<String> ts = tags != null ? tags : determineTagsForJdk(home);
+			return new Jdk.Default(provider, id, home, v.get(), fixedVersion, ts);
+		} else {
+			return null;
+		}
+	}
+
+	@NonNull
+	public Set<String> determineTagsForJdk(@Nullable Path home) {
+		if (home == null) {
+			return Collections.emptySet();
+		}
+		Set<String> tags = new HashSet<>();
+		if (JavaUtils.hasJavacCmd(home)) {
+			tags.add("jdk");
+		} else if (JavaUtils.hasJavaCmd(home)) {
+			tags.add("jre");
+		}
+		Optional<String> graalVersion = JavaUtils.readGraalVMVersionStringFromReleaseFile(home);
+		if (graalVersion.isPresent()) {
+			tags.add("graalvm");
+			if (JavaUtils.hasNativeImageCmd(home)) {
+				tags.add("native");
+			}
+		}
+		Path javafxProps = home.resolve("lib").resolve("javafx.properties");
+		if (Files.exists(javafxProps)) {
+			tags.add("javafx");
+		}
+		return tags;
 	}
 
 	@NonNull

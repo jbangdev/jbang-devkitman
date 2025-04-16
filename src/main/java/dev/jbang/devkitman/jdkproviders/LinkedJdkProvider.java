@@ -74,7 +74,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	protected boolean acceptFolder(Path jdkFolder) {
+	protected boolean acceptFolder(@NonNull Path jdkFolder) {
 		return isValidId(jdkFolder.getFileName().toString())
 				&& super.acceptFolder(jdkFolder)
 				&& FileUtils.isLink(jdkFolder);

@@ -9,8 +9,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import dev.jbang.devkitman.jdkproviders.DefaultJdkProvider;
@@ -74,7 +76,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(11));
-		jm.setDefaultJdk(jm.getJdk("12"));
+		jm.setDefaultJdk(jm.getInstalledJdk("12"));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(12));
 	}
 
@@ -84,22 +86,78 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(11));
-		jm.setDefaultJdk(jm.getJdk("16+"));
+		jm.setDefaultJdk(jm.getInstalledJdk("16+"));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
 	}
 
 	@Test
 	void testHomeDir() {
 		Arrays.asList(11, 14, 17).forEach(this::createMockJdk);
-		Path home = jdkManager().getOrInstallJdk(null).home();
+		Path home = jdkManager().getInstalledJdk(null).home();
 		assertThat(home.toString(), endsWith(File.separator + "default"));
 	}
 
 	@Test
 	void testDefaultHomeDir() {
 		Arrays.asList(11, 14, 17).forEach(this::createMockJdk);
-		Path home = jdkManager().getOrInstallJdk("default").home();
+		Path home = jdkManager().getInstalledJdk("default").home();
 		assertThat(home.toString(), endsWith(File.separator + "default"));
+	}
+
+	@Test
+	void testGetJdkNull() {
+		Arrays.asList(11, 12, 13).forEach(this::createMockJdk);
+		JdkManager jm = jdkManager();
+		assertThat(jm.getInstalledJdk(null), not(nullValue()));
+		assertThat(jm.getInstalledJdk(null).majorVersion(), is(11));
+		jm.setDefaultJdk(jm.getInstalledJdk("12"));
+		assertThat(jm.getInstalledJdk(null).majorVersion(), is(12));
+	}
+
+	@Test
+	void testHasTagJdk() {
+		createMockJdk(11);
+		JdkManager jm = jdkManager();
+		assertThat(jm.getInstalledJdk(null), not(nullValue()));
+		Set<String> tags = jm.getInstalledJdk(null).tags();
+		assertThat(tags, contains("jdk"));
+	}
+
+	@Test
+	@Disabled("Enable when we have support for JREs")
+	void testHasTagJre() {
+		createMockJdk(11, (p, v) -> initMockJdkDir(p, v, "JAVA_VERSION", false, false, false, false));
+		JdkManager jm = jdkManager("jbang");
+		assertThat(jm.getInstalledJdk(null), not(nullValue()));
+		Set<String> tags = jm.getInstalledJdk(null).tags();
+		assertThat(tags, contains("jre"));
+	}
+
+	@Test
+	void testHasTagsJdkGraalVM() {
+		createMockJdk(11, (p, v) -> initMockJdkDir(p, v, "JAVA_VERSION", true, true, false, false));
+		JdkManager jm = jdkManager();
+		assertThat(jm.getInstalledJdk(null), not(nullValue()));
+		Set<String> tags = jm.getInstalledJdk(null).tags();
+		assertThat(tags, containsInAnyOrder("jdk", "graalvm"));
+	}
+
+	@Test
+	void testHasTagsJdkGraalVMNative() {
+		createMockJdk(11, (p, v) -> initMockJdkDir(p, v, "JAVA_VERSION", true, true, true, false));
+		JdkManager jm = jdkManager();
+		assertThat(jm.getInstalledJdk(null), not(nullValue()));
+		Set<String> tags = jm.getInstalledJdk(null).tags();
+		assertThat(tags, containsInAnyOrder("jdk", "graalvm", "native"));
+	}
+
+	@Test
+	void testHasTagsJdkJavaFX() {
+		createMockJdk(11, (p, v) -> initMockJdkDir(p, v, "JAVA_VERSION", true, false, false, true));
+		JdkManager jm = jdkManager();
+		assertThat(jm.getInstalledJdk(null), not(nullValue()));
+		Set<String> tags = jm.getInstalledJdk(null).tags();
+		assertThat(tags, containsInAnyOrder("jdk", "javafx"));
 	}
 
 	@Test
@@ -108,7 +166,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(14));
-		jm.getJdk("14", JdkProvider.Predicates.canUpdate).uninstall();
+		jm.getInstalledJdk("14", JdkProvider.Predicates.canUpdate).uninstall();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
 	}
@@ -119,7 +177,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
-		jm.getJdk("17", JdkProvider.Predicates.canUpdate).uninstall();
+		jm.getInstalledJdk("17", JdkProvider.Predicates.canUpdate).uninstall();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(14));
 	}
@@ -127,14 +185,14 @@ public class TestJdkManager extends BaseTest {
 	@Test
 	void testVersionHomeDir() {
 		Arrays.asList(11, 14, 17).forEach(this::createMockJdk);
-		Path home = jdkManager().getOrInstallJdk("17").home();
+		Path home = jdkManager().getInstalledJdk("17").home();
 		assertThat(home.toString(), endsWith(File.separator + "17"));
 	}
 
 	@Test
 	void testVersionPlusHomeDir() {
 		Arrays.asList(11, 14, 17).forEach(this::createMockJdk);
-		Path home = jdkManager().getOrInstallJdk("16+").home();
+		Path home = jdkManager().getInstalledJdk("16+").home();
 		assertThat(home.toString(), endsWith(File.separator + "17"));
 	}
 
@@ -148,7 +206,7 @@ public class TestJdkManager extends BaseTest {
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		JdkManager jm = jdkManager("javahome", "jbang");
-		Jdk jdk = jm.getOrInstallJdk("12");
+		Jdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(JavaHomeJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk12"));
 	}
@@ -163,8 +221,8 @@ public class TestJdkManager extends BaseTest {
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		JdkManager jm = jdkManager("default", "javahome", "jbang");
-		jm.setDefaultJdk(jm.getJdk("12"));
-		Jdk jdk = jm.getOrInstallJdk("12");
+		jm.setDefaultJdk(jm.getInstalledJdk("12"));
+		Jdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(DefaultJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "default"));
 		assertThat(jdk.home().toRealPath().toString(), endsWith(File.separator + "jdk12"));
@@ -181,7 +239,7 @@ public class TestJdkManager extends BaseTest {
 				"PATH", jdkPath.resolve("bin") + File.pathSeparator + System.getenv("PATH"));
 
 		JdkManager jm = jdkManager("path", "jbang");
-		Jdk jdk = jm.getOrInstallJdk("12");
+		Jdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(PathJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk12"));
 	}

@@ -7,11 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import org.jspecify.annotations.NonNull;
 
 public class JavaUtils {
 
@@ -51,11 +54,11 @@ public class JavaUtils {
 		return defaultValue;
 	}
 
-	public static Optional<Integer> resolveJavaVersionFromPath(Path home) {
+	public static Optional<Integer> resolveJavaVersionFromPath(@NonNull Path home) {
 		return resolveJavaVersionStringFromPath(home).map(JavaUtils::parseJavaVersion);
 	}
 
-	public static Optional<String> resolveJavaVersionStringFromPath(Path home) {
+	public static Optional<String> resolveJavaVersionStringFromPath(@NonNull Path home) {
 		Optional<String> res = readJavaVersionStringFromReleaseFile(home);
 		if (!res.isPresent()) {
 			res = readJavaVersionStringFromJavaCommand(home);
@@ -63,11 +66,18 @@ public class JavaUtils {
 		return res;
 	}
 
-	public static Optional<String> readJavaVersionStringFromReleaseFile(Path home) {
+	public static Optional<String> readJavaVersionStringFromReleaseFile(@NonNull Path home) {
+		return readVersionStringFromReleaseFile(home,
+				l -> l.startsWith("JAVA_VERSION=") || l.startsWith("JAVA_RUNTIME_VERSION="));
+	}
+
+	public static Optional<String> readGraalVMVersionStringFromReleaseFile(@NonNull Path home) {
+		return readVersionStringFromReleaseFile(home, l -> l.startsWith("GRAALVM_VERSION="));
+	}
+
+	public static Optional<String> readVersionStringFromReleaseFile(@NonNull Path home, Predicate<String> lineFilter) {
 		try (Stream<String> lines = Files.lines(home.resolve("release"))) {
-			return lines.filter(
-					l -> l.startsWith("JAVA_VERSION=")
-							|| l.startsWith("JAVA_RUNTIME_VERSION="))
+			return lines.filter(lineFilter)
 				.map(JavaUtils::parseJavaOutput)
 				.findAny();
 		} catch (IOException e) {
@@ -76,7 +86,7 @@ public class JavaUtils {
 		}
 	}
 
-	public static Optional<String> readJavaVersionStringFromJavaCommand(Path home) {
+	public static Optional<String> readJavaVersionStringFromJavaCommand(@NonNull Path home) {
 		Optional<String> res;
 		Path javaCmd = OsUtils.searchPath("java", home.resolve("bin").toString());
 		if (javaCmd != null) {
@@ -101,6 +111,18 @@ public class JavaUtils {
 		return null;
 	}
 
+	public static boolean hasJavaCmd(@NonNull Path jdkFolder) {
+		return OsUtils.searchPath("java", jdkFolder.resolve("bin").toString()) != null;
+	}
+
+	public static boolean hasJavacCmd(@NonNull Path jdkFolder) {
+		return OsUtils.searchPath("javac", jdkFolder.resolve("bin").toString()) != null;
+	}
+
+	public static boolean hasNativeImageCmd(@NonNull Path jdkFolder) {
+		return OsUtils.searchPath("native-image", jdkFolder.resolve("bin").toString()) != null;
+	}
+
 	/**
 	 * Returns the Path to JAVA_HOME
 	 *
@@ -119,7 +141,7 @@ public class JavaUtils {
 	 * the `jre` directory inside it and makes sure to return the path to the actual
 	 * home directory.
 	 */
-	public static Path jre2jdk(Path jdkHome) {
+	public static Path jre2jdk(@NonNull Path jdkHome) {
 		// Detect if the current JDK is a JRE and try to find the real home
 		if (!Files.isRegularFile(jdkHome.resolve("release"))) {
 			Path jh = jdkHome.toAbsolutePath();

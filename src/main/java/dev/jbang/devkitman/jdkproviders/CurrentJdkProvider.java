@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import org.jspecify.annotations.NonNull;
 
@@ -35,10 +34,9 @@ public class CurrentJdkProvider extends BaseJdkProvider {
 		if (jh != null) {
 			Path jdkHome = Paths.get(jh);
 			jdkHome = JavaUtils.jre2jdk(jdkHome);
-			Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(jdkHome);
-			if (version.isPresent()) {
-				return Collections.singletonList(
-						createJdk(Discovery.PROVIDER_ID, jdkHome, version.get(), false));
+			Jdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false);
+			if (jdk != null) {
+				return Collections.singletonList(jdk);
 			}
 		}
 		return Collections.emptyList();

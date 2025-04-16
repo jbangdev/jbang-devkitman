@@ -68,7 +68,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 	}
 
 	@Override
-	public Jdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version) {
+	public Jdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version) {
 		return super.createJdk(id, home, version, true);
 	}
 
@@ -117,7 +117,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 	}
 
 	@Override
-	protected boolean acceptFolder(Path jdkFolder) {
+	protected boolean acceptFolder(@NonNull Path jdkFolder) {
 		return isValidId(jdkFolder.getFileName().toString())
 				&& super.acceptFolder(jdkFolder)
 				&& !FileUtils.isLink(jdkFolder);

@@ -1,6 +1,7 @@
 package dev.jbang.devkitman;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -44,6 +45,12 @@ public interface Jdk extends Comparable<Jdk> {
 	Path home();
 
 	/**
+	 * Returns the tags that are associated with this JDK
+	 */
+	@NonNull
+	Set<String> tags();
+
+	/**
 	 * Returns the major version of the JDK
 	 */
 	int majorVersion();
@@ -79,7 +86,7 @@ public interface Jdk extends Comparable<Jdk> {
 		@Nullable
 		private final Path home;
 		@NonNull
-		private final Set<String> tags = new HashSet<>();
+		private final Set<String> tags;
 
 		Default(
 				@NonNull JdkProvider provider,
@@ -87,12 +94,13 @@ public interface Jdk extends Comparable<Jdk> {
 				@Nullable Path home,
 				@NonNull String version,
 				boolean fixedVersion,
-				@NonNull String... tags) {
+				@NonNull Set<String> tags) {
 			this.provider = provider;
 			this.id = id;
 			this.version = version;
 			this.fixedVersion = fixedVersion;
 			this.home = home;
+			this.tags = Collections.unmodifiableSet(new HashSet<>(tags));
 		}
 
 		@Override
@@ -126,6 +134,12 @@ public interface Jdk extends Comparable<Jdk> {
 						"Trying to retrieve home folder for uninstalled JDK");
 			}
 			return home;
+		}
+
+		@Override
+		@NonNull
+		public Set<String> tags() {
+			return tags;
 		}
 
 		@Override
@@ -210,6 +224,10 @@ public interface Jdk extends Comparable<Jdk> {
 
 		public static Predicate<Jdk> path(Path jdkPath) {
 			return jdk -> jdk.isInstalled() && jdkPath.startsWith(jdk.home());
+		}
+
+		public static Predicate<Jdk> allTags(Set<String> tags) {
+			return jdk -> jdk.tags().containsAll(tags);
 		}
 	}
 }
