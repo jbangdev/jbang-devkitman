@@ -10,7 +10,6 @@ import java.util.function.Function;
 import java.util.logging.*;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,12 +63,6 @@ public class BaseTest {
 	protected void initEnv(@TempDir Path tempPath) throws IOException {
 		System.setProperty("user.home", tempPath.resolve("home").toString());
 		config = new JdkDiscovery.Config(tempPath.resolve("jdks"), null, null);
-	}
-
-	// TODO Remove once https://github.com/junit-team/junit5/issues/4299 is released
-	@AfterEach
-	protected void cleanupEnv() throws IOException {
-		FileUtils.deletePath(config.installPath);
 	}
 
 	protected JdkManager jdkManager() {
