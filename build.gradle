@@ -60,8 +60,9 @@ dependencies {
 	implementation 'com.google.code.gson:gson:2.13.0'
 	implementation 'org.jspecify:jspecify:1.0.0'
 
-	testImplementation platform('org.junit:junit-bom:5.10.1')
+	testImplementation platform('org.junit:junit-bom:5.12.2')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation "org.hamcrest:hamcrest-library:3.0"
 	testImplementation "uk.org.webcompere:system-stubs-jupiter:2.1.8"
 	testImplementation "uk.org.webcompere:system-stubs-core:2.1.8"
