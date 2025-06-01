@@ -121,4 +121,18 @@ public class FileUtils {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> deletePath(path)));
 		return path;
 	}
+
+	// Returns true if a path is a (sym)link to an entry in the same folder
+	public static boolean isSameFolderLink(Path jdkFolder) {
+		Path absFolder = jdkFolder.toAbsolutePath();
+		try {
+			if (isLink(absFolder)) {
+				Path realPath = absFolder.toRealPath();
+				return Files.isSameFile(absFolder.getParent(), realPath.getParent());
+			}
+		} catch (IOException e) {
+			/* ignore */
+		}
+		return false;
+	}
 }
