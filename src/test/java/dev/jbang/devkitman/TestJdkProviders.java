@@ -34,6 +34,7 @@ public class TestJdkProviders extends BaseTest {
 						"linked",
 						"jbang",
 						"linux",
+						"mise",
 						"scoop",
 						"sdkman"));
 	}
@@ -73,13 +74,14 @@ public class TestJdkProviders extends BaseTest {
 						instanceOf(LinkedJdkProvider.class),
 						instanceOf(JBangJdkProvider.class),
 						instanceOf(LinuxJdkProvider.class),
+						instanceOf(MiseJdkProvider.class),
 						instanceOf(ScoopJdkProvider.class),
 						instanceOf(SdkmanJdkProvider.class)));
 	}
 
 	@Test
 	void testParseNames() {
-		String names = "current,default,javahome,path,linked,jbang,linux,scoop,sdkman";
+		String names = "current,default,javahome,path,linked,jbang,linux,scoop,sdkman,mise";
 		assertThat(
 				JdkProviders.instance().parseNames(config, names),
 				contains(
@@ -91,7 +93,8 @@ public class TestJdkProviders extends BaseTest {
 						instanceOf(JBangJdkProvider.class),
 						instanceOf(LinuxJdkProvider.class),
 						instanceOf(ScoopJdkProvider.class),
-						instanceOf(SdkmanJdkProvider.class)));
+						instanceOf(SdkmanJdkProvider.class),
+						instanceOf(MiseJdkProvider.class)));
 	}
 
 	@Test

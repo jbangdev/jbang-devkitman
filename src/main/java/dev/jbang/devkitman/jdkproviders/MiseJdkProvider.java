@@ -10,27 +10,20 @@ import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
 
 /**
- * This JDK provider is intended to detects JDKs that have been installed in
- * standard location of the users linux distro.
- *
- * <p>
- * For now just using `/usr/lib/devkitman` as apparently fedora, debian, ubuntu
- * and centos/rhel use it.
- *
- * <p>
- * If need different behavior per linux distro its intended this provider will
- * adjust based on identified distro.
+ * This JDK provider detects any JDKs that have been installed using Mise
+ * (https://mise.jdx.dev/)
  */
-public class LinuxJdkProvider extends BaseFoldersJdkProvider {
-	protected static final Path JDKS_ROOT = Paths.get("/usr/lib/devkitman");
+public class MiseJdkProvider extends BaseFoldersJdkProvider {
+	private static final Path JDKS_ROOT = Paths.get(System.getProperty("user.home"))
+		.resolve(".local/share/mise/installs/java");
 
-	public LinuxJdkProvider() {
+	public MiseJdkProvider() {
 		super(JDKS_ROOT);
 	}
 
 	@Override
 	public @NonNull String description() {
-		return "The JDKs installed in the standard location of a Linux distro.";
+		return "The JDKs installed using the Mise package manager.";
 	}
 
 	@Override
@@ -39,7 +32,7 @@ public class LinuxJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	public static class Discovery implements JdkDiscovery {
-		public static final String PROVIDER_ID = "linux";
+		public static final String PROVIDER_ID = "mise";
 
 		@Override
 		@NonNull
@@ -49,7 +42,7 @@ public class LinuxJdkProvider extends BaseFoldersJdkProvider {
 
 		@Override
 		public JdkProvider create(Config config) {
-			return new LinuxJdkProvider();
+			return new MiseJdkProvider();
 		}
 	}
 }
