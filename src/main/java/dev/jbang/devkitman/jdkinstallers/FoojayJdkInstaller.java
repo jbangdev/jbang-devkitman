@@ -159,11 +159,6 @@ public class FoojayJdkInstaller implements JdkInstaller {
 				}
 			}
 			String msg = "Required Java version not possible to download or install.";
-			/*
-			 * Jdk defjdk = JdkManager.getJdk(null, false); if (defjdk != null) { msg +=
-			 * " You can run with '--java " + defjdk.getMajorVersion() +
-			 * "' to force using the default installed Java."; }
-			 */
 			LOGGER.log(Level.FINE, msg);
 			throw new IllegalStateException(
 					"Unable to download or install JDK version " + version, e);
