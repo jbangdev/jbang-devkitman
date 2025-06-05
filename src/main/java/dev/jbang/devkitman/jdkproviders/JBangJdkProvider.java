@@ -167,7 +167,10 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 
 		@Override
 		public JdkProvider create(Config config) {
-			return new JBangJdkProvider(config.installPath);
+			JBangJdkProvider prov = new JBangJdkProvider(config.installPath);
+			return prov
+				.installer(new FoojayJdkInstaller(prov)
+					.distro(config.properties.getOrDefault("distro", null)));
 			// TODO make RAP configurable
 			// .remoteAccessProvider(RemoteAccessProvider.createDefaultRemoteAccessProvider(config.cachePath));
 		}

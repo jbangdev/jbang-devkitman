@@ -30,9 +30,12 @@ import dev.jbang.devkitman.util.*;
 public class FoojayJdkInstaller implements JdkInstaller {
 	protected final JdkFactory jdkFactory;
 	protected RemoteAccessProvider remoteAccessProvider = RemoteAccessProvider.createDefaultRemoteAccessProvider();
+	protected String distro = DEFAULT_DISTRO;
 
 	public static final String FOOJAY_JDK_DOWNLOAD_URL = "https://api.foojay.io/disco/v3.0/directuris?";
 	public static final String FOOJAY_JDK_VERSIONS_URL = "https://api.foojay.io/disco/v3.0/packages?";
+
+	public static final String DEFAULT_DISTRO = "temurin,aoj";
 
 	private static final Logger LOGGER = Logger.getLogger(FoojayJdkInstaller.class.getName());
 
@@ -46,12 +49,17 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		public List<JdkResult> result;
 	}
 
-	public FoojayJdkInstaller(JdkFactory jdkFactory) {
+	public FoojayJdkInstaller(@NonNull JdkFactory jdkFactory) {
 		this.jdkFactory = jdkFactory;
 	}
 
-	public FoojayJdkInstaller remoteAccessProvider(RemoteAccessProvider remoteAccessProvider) {
+	public @NonNull FoojayJdkInstaller remoteAccessProvider(@NonNull RemoteAccessProvider remoteAccessProvider) {
 		this.remoteAccessProvider = remoteAccessProvider;
+		return this;
+	}
+
+	public @NonNull FoojayJdkInstaller distro(String distro) {
+		this.distro = distro != null && !distro.isEmpty() ? distro : DEFAULT_DISTRO;
 		return this;
 	}
 
@@ -63,15 +71,8 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			Consumer<String> addJdk = version -> {
 				result.add(jdkFactory.createJdk(jdkFactory.jdkId(version), null, version));
 			};
-			String distro = getDistro();
-			if (distro == null) {
-				VersionsResponse res = readJsonFromUrl(
-						getVersionsUrl(OsUtils.getOS(), OsUtils.getArch(), "temurin,aoj"));
-				filterEA(res.result).forEach(jdk -> addJdk.accept(jdk.java_version));
-			} else {
-				VersionsResponse res = readJsonFromUrl(getVersionsUrl(OsUtils.getOS(), OsUtils.getArch(), distro));
-				filterEA(res.result).forEach(jdk -> addJdk.accept(jdk.java_version));
-			}
+			VersionsResponse res = readJsonFromUrl(getVersionsUrl(OsUtils.getOS(), OsUtils.getArch(), distro));
+			filterEA(res.result).forEach(jdk -> addJdk.accept(jdk.java_version));
 			// result.sort(Jdk::compareTo);
 			return Collections.unmodifiableList(new ArrayList<>(result));
 		} catch (IOException e) {
@@ -124,7 +125,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 				Level.INFO,
 				"Downloading JDK {0}. Be patient, this can take several minutes...",
 				version);
-		String url = getDownloadUrl(version, OsUtils.getOS(), OsUtils.getArch(), getDistro());
+		String url = getDownloadUrl(version, OsUtils.getOS(), OsUtils.getArch(), distro);
 		LOGGER.log(Level.FINE, "Downloading {0}", url);
 		Path jdkTmpDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".tmp");
 		Path jdkOldDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".old");
@@ -254,11 +255,6 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	private static int jdkVersion(String jdk) {
 		return JavaUtils.parseJavaVersion(jdk);
-	}
-
-	// TODO refactor
-	private static String getDistro() {
-		return null;
 	}
 
 	public interface JdkFactory {
