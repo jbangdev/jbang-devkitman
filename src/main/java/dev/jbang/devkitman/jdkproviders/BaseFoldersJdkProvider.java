@@ -78,7 +78,10 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 
 	@Override
 	public Jdk.@Nullable InstalledJdk getInstalledById(@NonNull String id) {
-		return getInstalledByPath(getJdkPath(id));
+		if (isValidId(id)) {
+			return getInstalledByPath(getJdkPath(id));
+		}
+		return null;
 	}
 
 	@Override
