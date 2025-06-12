@@ -184,14 +184,14 @@ public class TestJdkManager extends BaseTest {
 	void testVersionHomeDir() {
 		Arrays.asList(11, 14, 17).forEach(this::createMockJdk);
 		Path home = jdkManager().getInstalledJdk("17").home();
-		assertThat(home.toString(), endsWith(File.separator + "17"));
+		assertThat(home.toString(), endsWith(File.separator + "17.0.7-jbang"));
 	}
 
 	@Test
 	void testVersionPlusHomeDir() {
 		Arrays.asList(11, 14, 17).forEach(this::createMockJdk);
 		Path home = jdkManager().getInstalledJdk("16+").home();
-		assertThat(home.toString(), endsWith(File.separator + "17"));
+		assertThat(home.toString(), endsWith(File.separator + "17.0.7-jbang"));
 	}
 
 	@Test
@@ -301,7 +301,7 @@ public class TestJdkManager extends BaseTest {
 	@Test
 	void testInstallVersion() {
 		Path home = mockJdkManager(11, 14, 17).getOrInstallJdk("17").home();
-		assertThat(home.toString(), endsWith(File.separator + "17"));
+		assertThat(home.toString(), endsWith(File.separator + "17.0.7-jbang"));
 		assertThat(home.resolve("release").toFile().exists(), is(true));
 	}
 
@@ -319,7 +319,7 @@ public class TestJdkManager extends BaseTest {
 	@Test
 	void testInstallVersionPlus() {
 		Path home = mockJdkManager(11, 14, 17).getOrInstallJdk("15+").home();
-		assertThat(home.toString(), endsWith(File.separator + "17"));
+		assertThat(home.toString(), endsWith(File.separator + "17.0.7-jbang"));
 		assertThat(home.resolve("release").toFile().exists(), is(true));
 	}
 
