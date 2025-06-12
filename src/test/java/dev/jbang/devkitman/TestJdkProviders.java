@@ -35,6 +35,7 @@ public class TestJdkProviders extends BaseTest {
 						"jbang",
 						"linux",
 						"mise",
+						"multihome",
 						"scoop",
 						"sdkman"));
 	}
@@ -75,6 +76,7 @@ public class TestJdkProviders extends BaseTest {
 						instanceOf(JBangJdkProvider.class),
 						instanceOf(LinuxJdkProvider.class),
 						instanceOf(MiseJdkProvider.class),
+						instanceOf(MultiHomeJdkProvider.class),
 						instanceOf(ScoopJdkProvider.class),
 						instanceOf(SdkmanJdkProvider.class)));
 	}

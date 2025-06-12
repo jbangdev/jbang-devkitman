@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 import dev.jbang.devkitman.jdkproviders.DefaultJdkProvider;
 import dev.jbang.devkitman.jdkproviders.JavaHomeJdkProvider;
 import dev.jbang.devkitman.jdkproviders.LinkedJdkProvider;
+import dev.jbang.devkitman.jdkproviders.MultiHomeJdkProvider;
 import dev.jbang.devkitman.jdkproviders.PathJdkProvider;
-import dev.jbang.devkitman.util.FileUtils;
 
 public class TestJdkManager extends BaseTest {
 	@Test
@@ -44,9 +44,7 @@ public class TestJdkManager extends BaseTest {
 	void testHasJdksInstalledWithJavaHome() {
 		Arrays.asList(11, 12).forEach(this::createMockJdk);
 
-		Path jdkPath = config.cachePath.resolve("jdk13");
-		FileUtils.mkdirs(jdkPath);
-		initMockJdkDir(jdkPath, "13.0.7");
+		Path jdkPath = createMockJdkExt(13);
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		List<Jdk> jdks = jdkManager("default", "javahome", "jbang").listInstalledJdks();
@@ -200,9 +198,7 @@ public class TestJdkManager extends BaseTest {
 	void testJavaHome() throws IOException {
 		Arrays.asList(11, 13).forEach(this::createMockJdk);
 
-		Path jdkPath = config.cachePath.resolve("jdk12");
-		FileUtils.mkdirs(jdkPath);
-		initMockJdkDir(jdkPath, "12.0.7");
+		Path jdkPath = createMockJdkExt(12);
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		JdkManager jm = jdkManager("javahome", "jbang");
@@ -215,9 +211,7 @@ public class TestJdkManager extends BaseTest {
 	void testDefaultWithJavaHome() throws IOException {
 		Arrays.asList(11, 12, 13).forEach(this::createMockJdk);
 
-		Path jdkPath = config.cachePath.resolve("jdk12");
-		FileUtils.mkdirs(jdkPath);
-		initMockJdkDir(jdkPath, "12.0.7");
+		Path jdkPath = createMockJdkExt(12);
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		JdkManager jm = jdkManager("default", "javahome", "jbang");
@@ -232,9 +226,7 @@ public class TestJdkManager extends BaseTest {
 	void testPath() throws IOException {
 		Arrays.asList(11, 13).forEach(this::createMockJdk);
 
-		Path jdkPath = config.cachePath.resolve("jdk12");
-		FileUtils.mkdirs(jdkPath);
-		initMockJdkDir(jdkPath, "12.0.7");
+		Path jdkPath = createMockJdkExt(12);
 		environmentVariables.set(
 				"PATH", jdkPath.resolve("bin") + File.pathSeparator + System.getenv("PATH"));
 
@@ -246,12 +238,8 @@ public class TestJdkManager extends BaseTest {
 
 	@Test
 	void testLinkToExistingJdkPath() {
-		Path jdkPath = config.cachePath.resolve("jdk12");
-		FileUtils.mkdirs(jdkPath);
-		initMockJdkDir(jdkPath, "12.0.7");
-
+		Path jdkPath = createMockJdkExt(12);
 		jdkManager().linkToExistingJdk(jdkPath, "12");
-
 		List<Jdk> jdks = jdkManager().listInstalledJdks();
 		assertThat(jdks, hasSize(1));
 		assertThat(jdks.get(0).provider(), instanceOf(LinkedJdkProvider.class));
@@ -276,9 +264,7 @@ public class TestJdkManager extends BaseTest {
 	void testProviderOrder() {
 		Arrays.asList(11, 12, 13).forEach(this::createMockJdk);
 
-		Path jdkPath = config.cachePath.resolve("jdk12");
-		FileUtils.mkdirs(jdkPath);
-		initMockJdkDir(jdkPath, "12.0.7");
+		Path jdkPath = createMockJdkExt(12);
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		JdkManager jm = jdkManager("javahome", "jbang");
@@ -317,5 +303,31 @@ public class TestJdkManager extends BaseTest {
 			.getOrInstallJdk(
 					null);
 		assertThat(jdk.majorVersion(), is(JdkManager.DEFAULT_JAVA_VERSION));
+	}
+
+	@Test
+	void testMultiHome() {
+		// Make sure we don't use any existing JAVA_HOME_ variables
+		environmentVariables.getVariables()
+			.keySet()
+			.stream()
+			.filter(k -> k.startsWith("JAVA_HOME_"))
+			.forEach(environmentVariables::remove);
+
+		Path jdkPath1 = createMockJdkExt(12);
+		environmentVariables.set("JAVA_HOME_12_X64", jdkPath1.toString());
+		Path jdkPath2 = createMockJdkExt(17);
+		environmentVariables.set("JAVA_HOME_17_X64", jdkPath2.toString());
+
+		JdkManager jm = jdkManager("multihome");
+		Jdk jdk = jm.getInstalledJdk("12");
+		assertThat(jdk.provider(), instanceOf(MultiHomeJdkProvider.class));
+		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk12"));
+		jdk = jm.getInstalledJdk("17");
+		assertThat(jdk.provider(), instanceOf(MultiHomeJdkProvider.class));
+		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk17"));
+		List<Jdk> jdks = jm.listInstalledJdks();
+		assertThat(jdks, hasSize(2));
+		assertThat(jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()), containsInAnyOrder(12, 17));
 	}
 }
