@@ -115,6 +115,13 @@ public class BaseTest {
 		return jdkPath;
 	}
 
+	protected Path createMockJdkExt(int jdkVersion) {
+		Path jdkPath = config.cachePath.resolve("jdk" + jdkVersion);
+		FileUtils.mkdirs(jdkPath);
+		initMockJdkDir(jdkPath, jdkVersion + ".0.7");
+		return jdkPath;
+	}
+
 	protected void initMockJdkDirRuntime(Path jdkPath, String version) {
 		initMockJdkDir(jdkPath, version, "JAVA_RUNTIME_VERSION", true, false, false, false);
 	}

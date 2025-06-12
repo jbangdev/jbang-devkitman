@@ -14,8 +14,7 @@ import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * This JDK provider detects if a JDK is already available on the system by
- * looking at <code>
- * JAVA_HOME</code> environment variable.
+ * looking at <code>JAVA_HOME</code> environment variable.
  */
 public class JavaHomeJdkProvider extends BaseJdkProvider {
 

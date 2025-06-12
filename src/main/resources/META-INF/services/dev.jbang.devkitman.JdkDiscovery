@@ -5,7 +5,8 @@ dev.jbang.devkitman.jdkproviders.PathJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.LinkedJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.JBangJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.LinuxJdkProvider$Discovery
+dev.jbang.devkitman.jdkproviders.MiseJdkProvider$Discovery
+dev.jbang.devkitman.jdkproviders.MultiHomeJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.ScoopJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.SdkmanJdkProvider$Discovery
-dev.jbang.devkitman.jdkproviders.MiseJdkProvider$Discovery
 
