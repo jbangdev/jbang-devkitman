@@ -261,6 +261,32 @@ public class TestJdkManager extends BaseTest {
 	}
 
 	@Test
+	void testLinkToInvalidVersion() {
+		try {
+			Path jdkPath = createMockJdkExt(12);
+			jdkManager().linkToExistingJdk(jdkPath, "11");
+			assertThat("Should have thrown an exception", false);
+		} catch (IllegalArgumentException ex) {
+			assertThat(
+					ex.getMessage(),
+					startsWith("Linked JDK is not of the correct version: 12 instead of: 11"));
+		}
+	}
+
+	@Test
+	void testLinkToInvalidId() {
+		try {
+			Path jdkPath = createMockJdkExt(12);
+			jdkManager().linkToExistingJdk(jdkPath, "11foo");
+			assertThat("Should have thrown an exception", false);
+		} catch (IllegalArgumentException ex) {
+			assertThat(
+					ex.getMessage(),
+					startsWith("Invalid JDK id: 11foo, must be a valid major version number"));
+		}
+	}
+
+	@Test
 	void testProviderOrder() {
 		Arrays.asList(11, 12, 13).forEach(this::createMockJdk);
 

@@ -485,7 +485,10 @@ public class JdkManager {
 	public void linkToExistingJdk(Path jdkPath, String id) {
 		JdkProvider linked = provider(LinkedJdkProvider.Discovery.PROVIDER_ID);
 		if (linked == null) {
-			return;
+			throw new IllegalStateException("No provider available to link JDK");
+		}
+		if (JavaUtils.parseToInt(id, 0) == 0) {
+			throw new IllegalArgumentException("Invalid JDK id: " + id + ", must be a valid major version number");
 		}
 		if (!Files.isDirectory(jdkPath)) {
 			throw new IllegalArgumentException("Unable to resolve path as directory: " + jdkPath);
@@ -493,6 +496,10 @@ public class JdkManager {
 		Jdk linkedJdk = linked.getAvailableByIdOrToken(id + "@" + jdkPath);
 		if (linkedJdk == null) {
 			throw new IllegalArgumentException("Unable to create link to JDK in path: " + jdkPath);
+		}
+		if (linkedJdk.majorVersion() != JavaUtils.parseToInt(id, 0)) {
+			throw new IllegalArgumentException(
+					"Linked JDK is not of the correct version: " + linkedJdk.majorVersion() + " instead of: " + id);
 		}
 		LOGGER.log(Level.FINE, "Linking JDK: {0} to {1}", new Object[] { id, jdkPath });
 		linked.install(linkedJdk);
