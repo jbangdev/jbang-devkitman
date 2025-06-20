@@ -59,6 +59,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 	public Jdk install(@NonNull Jdk jdk) {
 		Jdk installedJdk = jdkInstaller.install(jdk, getJdkPath(jdk.id()));
 
+		// TODO Move this to JdkManager somehow!
 		// Now create or update symlink from major version to jdk
 		Path linkPath = getJdksPath().resolve(Integer.toString(installedJdk.majorVersion()));
 		if (!Files.exists(linkPath) || !FileUtils.isLink(linkPath)) {
@@ -102,9 +103,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return isValidId(jdkFolder.getFileName().toString())
-				&& super.acceptFolder(jdkFolder)
-				&& !FileUtils.isLink(jdkFolder);
+		return super.acceptFolder(jdkFolder) && !FileUtils.isLink(jdkFolder);
 	}
 
 	public static Path getJBangJdkDir() {

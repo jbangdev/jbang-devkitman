@@ -7,11 +7,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
+import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * This JDK provider returns the "default" JDK if it was set. This is not a JDK
@@ -19,11 +21,12 @@ import dev.jbang.devkitman.util.FileUtils;
  * configured for this default JDK should be stable and unchanging so it can be
  * added to the user's PATH.
  */
-public class DefaultJdkProvider extends BaseJdkProvider {
+public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 	@NonNull
 	protected final Path defaultJdkLink;
 
-	public DefaultJdkProvider(@NonNull Path defaultJdkLink) {
+	public DefaultJdkProvider(@NonNull Path defaultJdkLink, @NonNull Path defaultJdkDir) {
+		super(defaultJdkDir);
 		this.defaultJdkLink = defaultJdkLink;
 	}
 
@@ -50,6 +53,17 @@ public class DefaultJdkProvider extends BaseJdkProvider {
 		return Collections.emptyList();
 	}
 
+	@Nullable
+	@Override
+	public Jdk getInstalledByVersion(int version, boolean openVersion) {
+		Path jdk = jdksRoot.resolve(Integer.toString(version));
+		if (Files.isDirectory(jdk)) {
+			return createJdk(jdk);
+		} else {
+			return super.getInstalledByVersion(version, true);
+		}
+	}
+
 	@Override
 	public @NonNull Jdk install(@NonNull Jdk jdk) {
 		Jdk defJdk = getInstalledById(Discovery.PROVIDER_ID);
@@ -68,6 +82,28 @@ public class DefaultJdkProvider extends BaseJdkProvider {
 		FileUtils.deletePath(defaultJdkLink);
 	}
 
+	@Override
+	@NonNull
+	protected Path getJdkPath(@NonNull String id) {
+		if (name().equals(id)) {
+			return defaultJdkLink;
+		} else {
+			String name = id.substring(0, id.length() - name().length());
+			return jdksRoot.resolve(name);
+		}
+	}
+
+	@Override
+	public boolean isValidId(@NonNull String id) {
+		if (id.equals(name())) {
+			return true;
+		} else if (id.endsWith("-" + name())) {
+			String version = id.substring(0, id.length() - name().length());
+			return JavaUtils.parseToInt(version, 0) > 0;
+		}
+		return false;
+	}
+
 	public static class Discovery implements JdkDiscovery {
 		public static final String PROVIDER_ID = "default";
 
@@ -81,7 +117,9 @@ public class DefaultJdkProvider extends BaseJdkProvider {
 		public JdkProvider create(Config config) {
 			String defaultLink = config.properties.computeIfAbsent("link",
 					k -> config.installPath.resolve(PROVIDER_ID).toString());
-			return new DefaultJdkProvider(Paths.get(defaultLink));
+			String defaultDir = config.properties.computeIfAbsent("dir",
+					k -> config.installPath.toString());
+			return new DefaultJdkProvider(Paths.get(defaultLink), Paths.get(defaultDir));
 		}
 	}
 }
