@@ -70,7 +70,10 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	@Nullable
 	@Override
 	public Jdk getInstalledById(@NonNull String id) {
-		return getInstalledByPath(getJdkPath(id));
+		if (isValidId(id)) {
+			return getInstalledByPath(getJdkPath(id));
+		}
+		return null;
 	}
 
 	@Nullable
@@ -89,12 +92,12 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	 * available. This only needs to be implemented for providers that are
 	 * updatable.
 	 *
-	 * @param jdk The identifier of the JDK to install
+	 * @param id The identifier of the JDK to install
 	 * @return A path to the requested JDK
 	 */
 	@NonNull
-	protected Path getJdkPath(@NonNull String jdk) {
-		return jdksRoot.resolve(jdk);
+	protected Path getJdkPath(@NonNull String id) {
+		return jdksRoot.resolve(id);
 	}
 
 	protected Predicate<Path> sameJdk(Path jdkRoot) {

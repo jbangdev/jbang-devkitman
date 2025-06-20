@@ -14,7 +14,6 @@ import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import dev.jbang.devkitman.util.FileUtils;
-import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * JBang's main JDK provider that (by default) can download and install the JDKs
@@ -58,7 +57,21 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 	@NonNull
 	@Override
 	public Jdk install(@NonNull Jdk jdk) {
-		return jdkInstaller.install(jdk, getJdkPath(jdk.id()));
+		Jdk installedJdk = jdkInstaller.install(jdk, getJdkPath(jdk.id()));
+
+		// TODO Move this to JdkManager somehow!
+		// Now create or update symlink from major version to jdk
+		Path linkPath = getJdksPath().resolve(Integer.toString(installedJdk.majorVersion()));
+		if (!Files.exists(linkPath) || !FileUtils.isLink(linkPath)) {
+			// If the path exists but is not a link it's most likely a
+			// full JDK installation from a previous devkitman version.
+			// In any case we'll remove it to make place for a link
+			FileUtils.deletePath(linkPath);
+			// Now create the link
+			FileUtils.createLink(linkPath, installedJdk.home());
+		}
+
+		return installedJdk;
 	}
 
 	@Override
@@ -70,18 +83,6 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 	@Override
 	public Jdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version) {
 		return super.createJdk(id, home, version, true);
-	}
-
-	@Nullable
-	@Override
-	public Jdk getInstalledByVersion(int version, boolean openVersion) {
-		Path jdk = jdksRoot.resolve(Integer.toString(version));
-		if (Files.isDirectory(jdk)) {
-			return createJdk(jdk);
-		} else if (openVersion) {
-			return super.getInstalledByVersion(version, openVersion);
-		}
-		return null;
 	}
 
 	@Override
@@ -97,30 +98,12 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 	@NonNull
 	@Override
 	public String jdkId(String name) {
-		int majorVersion = JavaUtils.parseJavaVersion(name);
-		return super.jdkId(Integer.toString(majorVersion));
-	}
-
-	@Override
-	public boolean isValidId(@NonNull String id) {
-		return JavaUtils.parseToInt(id, 0) > 0;
-	}
-
-	@NonNull
-	@Override
-	protected Path getJdkPath(@NonNull String jdk) {
-		return getJdksPath().resolve(Integer.toString(jdkVersion(jdk)));
-	}
-
-	private static int jdkVersion(String jdk) {
-		return JavaUtils.parseJavaVersion(jdk);
+		return super.jdkId(name);
 	}
 
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return isValidId(jdkFolder.getFileName().toString())
-				&& super.acceptFolder(jdkFolder)
-				&& !FileUtils.isLink(jdkFolder);
+		return super.acceptFolder(jdkFolder) && !FileUtils.isLink(jdkFolder);
 	}
 
 	public static Path getJBangJdkDir() {

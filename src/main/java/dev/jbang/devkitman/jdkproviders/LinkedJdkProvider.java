@@ -118,14 +118,6 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		}
 	}
 
-	// TODO remove these 3 methods when switching to the new folder structure
-	@NonNull
-	@Override
-	public String jdkId(String name) {
-		int majorVersion = JavaUtils.parseJavaVersion(name);
-		return Integer.toString(majorVersion);
-	}
-
 	@Override
 	public boolean isValidId(@NonNull String id) {
 		return JavaUtils.parseToInt(id, 0) > 0;
