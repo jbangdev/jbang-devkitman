@@ -134,7 +134,7 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return JavaUtils.hasJavacCmd(jdkFolder);
+		return isValidId(jdkFolder.getFileName().toString()) && JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	@Override
