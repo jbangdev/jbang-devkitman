@@ -1,6 +1,5 @@
 package dev.jbang.devkitman.jdkproviders;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -14,6 +13,7 @@ import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import dev.jbang.devkitman.util.FileUtils;
+import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * JBang's main JDK provider that (by default) can download and install the JDKs
@@ -60,37 +60,12 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 
 	@Override
 	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk) {
-		Jdk.InstalledJdk installedJdk = jdkInstaller.install(jdk, getJdkPath(jdk.id()));
-
-		// Now create or update symlink from major version to jdk
-		Path linkPath = getJdksPath().resolve(Integer.toString(installedJdk.majorVersion()));
-		if (!Files.exists(linkPath) || !FileUtils.isLink(linkPath)) {
-			// If the path exists but is not a link it's most likely a
-			// full JDK installation from a previous devkitman version.
-			// In any case we'll remove it to make place for a link
-			FileUtils.deletePath(linkPath);
-			// Now create the link
-			FileUtils.createLink(linkPath, installedJdk.home());
-		}
-
-		return installedJdk;
+		return jdkInstaller.install(jdk, getJdkPath(jdk.id()));
 	}
 
 	@Override
 	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
-		super.uninstall(jdk);
 		jdkInstaller.uninstall(jdk);
-	}
-
-	@Override
-	public Jdk.@Nullable InstalledJdk getInstalledByVersion(int version, boolean openVersion) {
-		Path jdk = jdksRoot.resolve(Integer.toString(version));
-		if (Files.isDirectory(jdk)) {
-			return createJdk(jdk);
-		} else if (openVersion) {
-			return super.getInstalledByVersion(version, openVersion);
-		}
-		return null;
 	}
 
 	@Override
@@ -98,21 +73,12 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 		return true;
 	}
 
-	@NonNull
-	public Path getJdksPath() {
-		return jdksRoot;
-	}
-
-	@NonNull
-	@Override
-	public String jdkId(String name) {
-		return super.jdkId(name);
-	}
-
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return isValidId(jdkFolder.getFileName().toString())
-				&& super.acceptFolder(jdkFolder)
+		// We additionally allow folders that are named with a number
+		// (e.g. "11", "17", etc.) for backwards compatibility with older
+		// JBang versions
+		return (super.acceptFolder(jdkFolder) || JavaUtils.parseToInt(jdkFolder.getFileName().toString(), 0) > 0)
 				&& !FileUtils.isLink(jdkFolder);
 	}
 

@@ -34,12 +34,17 @@ public class CurrentJdkProvider extends BaseJdkProvider {
 		if (jh != null) {
 			Path jdkHome = Paths.get(jh);
 			jdkHome = JavaUtils.jre2jdk(jdkHome);
-			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false, null);
+			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, null);
 			if (jdk != null) {
 				return Collections.singletonList(jdk);
 			}
 		}
 		return Collections.emptyList();
+	}
+
+	@Override
+	public boolean hasFixedVersions() {
+		return false;
 	}
 
 	public static class Discovery implements JdkDiscovery {

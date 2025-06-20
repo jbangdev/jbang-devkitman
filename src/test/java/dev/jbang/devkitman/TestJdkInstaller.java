@@ -17,7 +17,7 @@ public class TestJdkInstaller extends BaseTest {
 	void testListAvailable() throws IOException {
 		JdkManager jm = jdkManager("jbang");
 		List<Jdk.AvailableJdk> jdks = jm.listAvailableJdks();
-		assertThat(jdks, hasSize(18));
+		assertThat(jdks, hasSize(21));
 		assertThat(jdks.get(0).majorVersion(), is(25));
 		assertThat(jdks.get(jdks.size() - 1).majorVersion(), is(8));
 	}
@@ -29,7 +29,6 @@ public class TestJdkInstaller extends BaseTest {
 		assertThat(jdk.provider(), instanceOf(JBangJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "12.0.2-jbang"));
 		assertThat(jdk.home().resolve("release").toFile().exists(), is(true));
-		assertThat(jdk.home().getParent().resolve("12/release").toFile().exists(), is(true));
 	}
 
 	@Test
@@ -37,6 +36,6 @@ public class TestJdkInstaller extends BaseTest {
 		JdkManager jm = jdkManager("jbang");
 		Jdk.InstalledJdk jdk = jm.getOrInstallJdk("12+");
 		assertThat(jdk.provider(), instanceOf(JBangJdkProvider.class));
-		assertThat(jdk.home().toString(), endsWith(File.separator + "21"));
+		assertThat(jdk.home().toString(), endsWith(File.separator + "21.0.6+7-jbang"));
 	}
 }

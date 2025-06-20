@@ -14,12 +14,9 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-import dev.jbang.devkitman.jdkproviders.DefaultJdkProvider;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.jdkproviders.LinkedJdkProvider;
-import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
-import dev.jbang.devkitman.util.OsUtils;
 
 public class JdkManager {
 	public static final int DEFAULT_JAVA_VERSION = 21;
@@ -426,49 +423,85 @@ public class JdkManager {
 			.orElse(null);
 	}
 
-	public void uninstallJdk(Jdk.@NonNull InstalledJdk jdk) {
-		Jdk.InstalledJdk defaultJdk = getDefaultJdk();
-		if (OsUtils.isWindows()) {
-			// On Windows we have to check nobody is currently using the JDK or we could
-			// be causing all kinds of trouble
-			try {
-				Path jdkTmpDir = jdk.home()
-					.getParent()
-					.resolve("_delete_me_" + jdk.home().getFileName().toString());
-				Files.move(jdk.home(), jdkTmpDir);
-				Files.move(jdkTmpDir, jdk.home());
-			} catch (IOException ex) {
-				LOGGER.log(Level.WARNING, "Cannot uninstall JDK, it's being used: {0}", jdk);
-				return;
+	Jdk.@NonNull InstalledJdk installJdk(Jdk.@NonNull AvailableJdk jdk) {
+		Jdk.InstalledJdk newJdk = jdk.provider().install(jdk);
+
+		if (hasDefaultProvider()) {
+			// Check if we have a global default Jdk set, if not set the new JDK as default
+			Jdk.InstalledJdk defJdk = getDefaultJdk();
+			if (defJdk == null) {
+				Jdk.AvailableJdk newDefJdk = jdk.provider().getAvailableByIdOrToken("default");
+				assert newDefJdk != null : "Internal error, global default JDK should always be available";
+				newDefJdk.install();
+			}
+			// Check if we have a versioned default Jdk set, if not set the new JDK as
+			// default
+			int v = newJdk.majorVersion();
+			Jdk.InstalledJdk defJdkVer = getDefaultJdkForVersion(v);
+			if (defJdkVer == null) {
+				Jdk.AvailableJdk newDefJdk = jdk.provider().getAvailableByIdOrToken(v + "-default");
+				assert newDefJdk != null : "Internal error, versioned default JDK should always be available";
+				newDefJdk.install();
 			}
 		}
 
+		return newJdk;
+	}
+
+	void uninstallJdk(Jdk.@NonNull InstalledJdk jdk) {
+		// Check if the JDK is the global default JDK, if so we need to reset it
 		boolean resetDefault = false;
+		Jdk.InstalledJdk defaultJdk = getDefaultJdk();
 		if (defaultJdk != null) {
 			Path defHome = defaultJdk.home();
 			try {
 				resetDefault = Files.isSameFile(defHome, jdk.home());
 			} catch (IOException ex) {
-				LOGGER.log(Level.WARNING, "Error while trying to reset default JDK", ex);
+				LOGGER.log(Level.WARNING, "Error while trying to reset global default JDK", ex);
 				resetDefault = defHome.equals(jdk.home());
 			}
 		}
-
-		if (jdk.isInstalled()) {
-			FileUtils.deletePath(jdk.home());
-			LOGGER.log(Level.INFO, "JDK {0} has been uninstalled", new Object[] { jdk.id() });
+		// Check if the JDK is the global default JDK, if so we need to reset it
+		boolean resetDefaultVer = false;
+		Jdk.InstalledJdk defaultJdkVer = getDefaultJdk();
+		if (defaultJdkVer != null) {
+			Path defHome = defaultJdkVer.home();
+			try {
+				resetDefaultVer = Files.isSameFile(defHome, jdk.home());
+			} catch (IOException ex) {
+				LOGGER.log(Level.WARNING, "Error while trying to reset versioned default JDK", ex);
+				resetDefaultVer = defHome.equals(jdk.home());
+			}
 		}
 
+		jdk.provider().uninstall(jdk);
+
 		if (resetDefault) {
-			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(jdk.majorVersion(), JdkProvider.Predicates.canUpdate);
+			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(Jdk.Predicates.minVersion(jdk.majorVersion()),
+					JdkProvider.Predicates.canUpdate);
 			if (!newjdk.isPresent()) {
-				newjdk = prevInstalledJdk(jdk.majorVersion(), JdkProvider.Predicates.canUpdate);
+				newjdk = prevInstalledJdk(Jdk.Predicates.maxVersion(jdk.majorVersion()),
+						JdkProvider.Predicates.canUpdate);
 			}
 			if (newjdk.isPresent()) {
 				setDefaultJdk(newjdk.get());
 			} else {
 				removeDefaultJdk();
-				LOGGER.log(Level.INFO, "Default JDK unset");
+				LOGGER.log(Level.INFO, "Global default JDK unset");
+			}
+		}
+		if (resetDefaultVer) {
+			int v = jdk.majorVersion();
+			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(Jdk.Predicates.exactVersion(v),
+					JdkProvider.Predicates.canUpdate);
+			if (!newjdk.isPresent()) {
+				newjdk = prevInstalledJdk(Jdk.Predicates.exactVersion(v), JdkProvider.Predicates.canUpdate);
+			}
+			if (newjdk.isPresent()) {
+				setDefaultJdkForVersion(newjdk.get());
+			} else {
+				removeDefaultJdkForVersion(v);
+				LOGGER.log(Level.INFO, "Versioned default JDK unset");
 			}
 		}
 	}
@@ -486,19 +519,12 @@ public class JdkManager {
 		if (linked == null) {
 			throw new IllegalStateException("No provider available to link JDK");
 		}
-		if (JavaUtils.parseToInt(id, 0) == 0) {
-			throw new IllegalArgumentException("Invalid JDK id: " + id + ", must be a valid major version number");
-		}
 		if (!Files.isDirectory(jdkPath)) {
 			throw new IllegalArgumentException("Unable to resolve path as directory: " + jdkPath);
 		}
-		Jdk.AvailableJdk linkedJdk = linked.getAvailableByIdOrToken(id + "@" + jdkPath);
+		Jdk.AvailableJdk linkedJdk = linked.getAvailableByIdOrToken(id + "-linked@" + jdkPath);
 		if (linkedJdk == null) {
 			throw new IllegalArgumentException("Unable to create link to JDK in path: " + jdkPath);
-		}
-		if (linkedJdk.majorVersion() != JavaUtils.parseToInt(id, 0)) {
-			throw new IllegalArgumentException(
-					"Linked JDK is not of the correct version: " + linkedJdk.majorVersion() + " instead of: " + id);
 		}
 		LOGGER.log(Level.FINE, "Linking JDK: {0} to {1}", new Object[] { id, jdkPath });
 		linked.install(linkedJdk);
@@ -509,14 +535,15 @@ public class JdkManager {
 	 * available version. Returns <code>Optional.empty()</code> if no matching JDK
 	 * was found;
 	 *
-	 * @param minVersion     the minimal version to return
+	 * @param jdkFilter      Only return JDKs that match the filter
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return an optional JDK
 	 */
 	private Optional<Jdk.InstalledJdk> nextInstalledJdk(
-			int minVersion, @NonNull Predicate<JdkProvider> providerFilter) {
+			@NonNull Predicate<Jdk.InstalledJdk> jdkFilter,
+			@NonNull Predicate<JdkProvider> providerFilter) {
 		return listInstalledJdks(providerFilter)
-			.filter(jdk -> jdk.majorVersion() >= minVersion)
+			.filter(jdkFilter)
 			.min(Jdk::compareTo);
 	}
 
@@ -525,14 +552,15 @@ public class JdkManager {
 	 * available version. Returns <code>Optional.empty()</code> if no matching JDK
 	 * was found;
 	 *
-	 * @param maxVersion     the maximum version to return
+	 * @param jdkFilter      Only return JDKs that match the filter
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return an optional JDK
 	 */
 	private Optional<Jdk.InstalledJdk> prevInstalledJdk(
-			int maxVersion, @NonNull Predicate<JdkProvider> providerFilter) {
+			@NonNull Predicate<Jdk.InstalledJdk> jdkFilter,
+			@NonNull Predicate<JdkProvider> providerFilter) {
 		return listInstalledJdks(providerFilter)
-			.filter(jdk -> jdk.majorVersion() <= maxVersion)
+			.filter(jdkFilter)
 			.max(Jdk::compareTo);
 	}
 
@@ -571,8 +599,13 @@ public class JdkManager {
 
 	public Jdk.@Nullable InstalledJdk getDefaultJdk() {
 		return hasDefaultProvider()
-				? defaultProvider.getInstalledById(
-						DefaultJdkProvider.Discovery.PROVIDER_ID)
+				? defaultProvider.getInstalledById("default")
+				: null;
+	}
+
+	public Jdk.@Nullable InstalledJdk getDefaultJdkForVersion(int majorVersion) {
+		return hasDefaultProvider()
+				? defaultProvider.getInstalledById(majorVersion + "-default")
 				: null;
 	}
 
@@ -582,7 +615,7 @@ public class JdkManager {
 			// Check if the new jdk exists and isn't the same as the current default
 			if (jdk.isInstalled() && !jdk.equals(defJdk)) {
 				// Special syntax for "installing" the default JDK
-				Jdk.AvailableJdk newDefJdk = defaultProvider.getAvailableByIdOrToken(jdk.home().toString());
+				Jdk.AvailableJdk newDefJdk = defaultProvider.getAvailableByIdOrToken("default@" + jdk.home());
 				if (newDefJdk == null) {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdk.home());
@@ -593,8 +626,34 @@ public class JdkManager {
 		}
 	}
 
+	public void setDefaultJdkForVersion(Jdk.@NonNull InstalledJdk jdk) {
+		if (hasDefaultProvider()) {
+			Jdk.InstalledJdk defJdk = getDefaultJdkForVersion(jdk.majorVersion());
+			// Check if the new jdk exists and isn't the same as the current default
+			if (jdk.isInstalled() && !jdk.equals(defJdk)) {
+				// Special syntax for "installing" the default JDK
+				Jdk.AvailableJdk newDefJdk = defaultProvider
+					.getAvailableByIdOrToken(jdk.majorVersion() + "-default@" + jdk.home());
+				if (newDefJdk == null) {
+					throw new IllegalArgumentException(
+							"Unable to determine Java version in given path: " + jdk.home());
+				}
+				defaultProvider.install(newDefJdk);
+				LOGGER.log(Level.INFO, "Default JDK for version {0} set to {1}",
+						new Object[] { jdk.majorVersion(), jdk });
+			}
+		}
+	}
+
 	public void removeDefaultJdk() {
 		Jdk.InstalledJdk defJdk = getDefaultJdk();
+		if (defJdk != null) {
+			defJdk.uninstall();
+		}
+	}
+
+	public void removeDefaultJdkForVersion(int majorVersion) {
+		Jdk.InstalledJdk defJdk = getDefaultJdkForVersion(majorVersion);
 		if (defJdk != null) {
 			defJdk.uninstall();
 		}

@@ -226,7 +226,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			}
 			Files.move(jdkTmpDir, jdkDir);
 			FileUtils.deletePath(jdkOldDir);
-			Jdk.InstalledJdk newJdk = jdkProvider.createJdk(foojayJdk.id(), jdkDir, null, true, null);
+			Jdk.InstalledJdk newJdk = jdkProvider.createJdk(foojayJdk.id(), jdkDir, null, null);
 			if (newJdk == null) {
 				throw new IllegalStateException("Cannot obtain version of recently installed JDK");
 			}
@@ -249,9 +249,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	@Override
 	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
-		if (jdk.isInstalled()) {
-			FileUtils.deletePath(jdk.home());
-		}
+		JavaUtils.safeDeleteJdk(jdk.home());
 	}
 
 	private static String getVersionsUrl(int minVersion, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,

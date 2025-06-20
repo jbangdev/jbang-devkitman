@@ -38,12 +38,17 @@ public class PathJdkProvider extends BaseJdkProvider {
 			jdkHome = javac.getParent().getParent();
 		}
 		if (jdkHome != null) {
-			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false, null);
+			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, null);
 			if (jdk != null) {
 				return Collections.singletonList(jdk);
 			}
 		}
 		return Collections.emptyList();
+	}
+
+	@Override
+	public boolean hasFixedVersions() {
+		return false;
 	}
 
 	public static class Discovery implements JdkDiscovery {

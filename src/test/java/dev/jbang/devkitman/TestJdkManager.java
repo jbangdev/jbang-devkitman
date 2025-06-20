@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,7 +57,7 @@ public class TestJdkManager extends BaseTest {
 				jdks.stream().map(Jdk::version).collect(Collectors.toList()),
 				containsInAnyOrder("11.0.7", "11.0.7", "12.0.7", "13.0.7"));
 		assertThat(
-				jdks.stream().map(Jdk.InstalledJdk::isFixedVersion).collect(Collectors.toList()),
+				jdks.stream().map(jdk -> jdk.provider().hasFixedVersions()).collect(Collectors.toList()),
 				containsInAnyOrder(false, true, true, false));
 	}
 
@@ -74,7 +75,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(11));
-		jm.setDefaultJdk(jm.getInstalledJdk("12"));
+		jm.setDefaultJdk(Objects.requireNonNull(jm.getInstalledJdk("12")));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(12));
 	}
 
@@ -84,7 +85,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(11));
-		jm.setDefaultJdk(jm.getInstalledJdk("16+"));
+		jm.setDefaultJdk(Objects.requireNonNull(jm.getInstalledJdk("16+")));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
 	}
 
@@ -108,7 +109,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getInstalledJdk(null), not(nullValue()));
 		assertThat(jm.getInstalledJdk(null).majorVersion(), is(11));
-		jm.setDefaultJdk(jm.getInstalledJdk("12"));
+		jm.setDefaultJdk(Objects.requireNonNull(jm.getInstalledJdk("12")));
 		assertThat(jm.getInstalledJdk(null).majorVersion(), is(12));
 	}
 
@@ -215,7 +216,7 @@ public class TestJdkManager extends BaseTest {
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		JdkManager jm = jdkManager("default", "javahome", "jbang");
-		jm.setDefaultJdk(jm.getInstalledJdk("12"));
+		jm.setDefaultJdk(Objects.requireNonNull(jm.getInstalledJdk("12")));
 		Jdk.InstalledJdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(DefaultJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "default"));
@@ -237,12 +238,25 @@ public class TestJdkManager extends BaseTest {
 	}
 
 	@Test
-	void testLinkToExistingJdkPath() {
+	void testLinkToJdk() {
 		Path jdkPath = createMockJdkExt(12);
-		jdkManager().linkToExistingJdk(jdkPath, "12");
+		jdkManager().linkToExistingJdk(jdkPath, "mylink");
 		List<Jdk.InstalledJdk> jdks = jdkManager().listInstalledJdks();
 		assertThat(jdks, hasSize(1));
 		assertThat(jdks.get(0).provider(), instanceOf(LinkedJdkProvider.class));
+		assertThat(jdks.get(0).majorVersion(), is(12));
+	}
+
+	@Test
+	void testLinkToExistingLink() {
+		Path jdk12Path = createMockJdkExt(12);
+		Path jdk14Path = createMockJdkExt(14);
+		jdkManager().linkToExistingJdk(jdk12Path, "mylink");
+		jdkManager().linkToExistingJdk(jdk14Path, "mylink");
+		List<Jdk.InstalledJdk> jdks = jdkManager().listInstalledJdks();
+		assertThat(jdks, hasSize(1));
+		assertThat(jdks.get(0).provider(), instanceOf(LinkedJdkProvider.class));
+		assertThat(jdks.get(0).majorVersion(), is(14));
 	}
 
 	@Test
@@ -261,28 +275,15 @@ public class TestJdkManager extends BaseTest {
 	}
 
 	@Test
-	void testLinkToInvalidVersion() {
-		try {
-			Path jdkPath = createMockJdkExt(12);
-			jdkManager().linkToExistingJdk(jdkPath, "11");
-			assertThat("Should have thrown an exception", false);
-		} catch (IllegalArgumentException ex) {
-			assertThat(
-					ex.getMessage(),
-					startsWith("Linked JDK is not of the correct version: 12 instead of: 11"));
-		}
-	}
-
-	@Test
 	void testLinkToInvalidId() {
 		try {
 			Path jdkPath = createMockJdkExt(12);
-			jdkManager().linkToExistingJdk(jdkPath, "11foo");
+			jdkManager().linkToExistingJdk(jdkPath, "11%foo");
 			assertThat("Should have thrown an exception", false);
 		} catch (IllegalArgumentException ex) {
 			assertThat(
 					ex.getMessage(),
-					startsWith("Invalid JDK id: 11foo, must be a valid major version number"));
+					startsWith("Unable to create link to JDK in path:"));
 		}
 	}
 
@@ -355,5 +356,13 @@ public class TestJdkManager extends BaseTest {
 		List<Jdk.InstalledJdk> jdks = jm.listInstalledJdks();
 		assertThat(jdks, hasSize(2));
 		assertThat(jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()), containsInAnyOrder(12, 17));
+	}
+
+	@Test
+	void testBackwardCompatList() {
+		Arrays.asList("8", "11", "17").forEach(v -> createMockJdk(v, v + ".0.7"));
+		List<Jdk.InstalledJdk> jdks = jdkManager().listInstalledJdks();
+		assertThat(jdks, hasSize(4));
+		assertThat(jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()), containsInAnyOrder(8, 8, 11, 17));
 	}
 }

@@ -23,10 +23,10 @@ import dev.jbang.devkitman.util.JavaUtils;
 public interface JdkProvider {
 
 	default Jdk.@Nullable InstalledJdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version,
-			boolean fixedVersion, @Nullable Set<String> tags) {
+			@Nullable Set<String> tags) {
 		Optional<String> v = version != null ? Optional.of(version) : JavaUtils.resolveJavaVersionStringFromPath(home);
 		if (v.isPresent()) {
-			return new Jdk.InstalledJdk.Default(this, id, home, v.get(), fixedVersion, tags);
+			return new Jdk.InstalledJdk.Default(this, id, home, v.get(), tags);
 		} else {
 			return null;
 		}
@@ -145,6 +145,18 @@ public interface JdkProvider {
 	}
 
 	/**
+	 * Determines if the JDK versions are fixed or that they can change. For
+	 * example, providers like "default" and "linked" can have JDKs with the same id
+	 * that refer to different versions over time, while other providers will always
+	 * return the same JDK for a given id.
+	 *
+	 * @return True if the provider has fixed versions, false otherwise
+	 */
+	default boolean hasFixedVersions() {
+		return true;
+	}
+
+	/**
 	 * This method returns a set of JDKs that are available for installation.
 	 * Implementations might set the <code>home</code> field of the JDK objects if
 	 * the respective JDK is currently installed on the user's system, but only if
@@ -187,7 +199,8 @@ public interface JdkProvider {
 	}
 
 	/**
-	 * Installs the indicated JDK
+	 * Installs the indicated JDK. NB: Never call this method directly, always use
+	 * <code>Jdk.install(jdk)</code> instead.
 	 *
 	 * @param jdk The <code>Jdk</code> object of the JDK to install
 	 * @return A <code>Jdk</code> object
@@ -199,17 +212,15 @@ public interface JdkProvider {
 	}
 
 	/**
-	 * Uninstalls the indicated JDK
+	 * Uninstalls the indicated JDK. NB: Never call this method directly, always use
+	 * <code>Jdk.uninstall(jdk)</code> instead.
 	 *
 	 * @param jdk The <code>Jdk</code> object of the JDK to uninstall
 	 * @throws UnsupportedOperationException if the provider can not update
 	 */
 	default void uninstall(Jdk.@NonNull InstalledJdk jdk) {
-		if (!canUpdate()) {
-			throw new UnsupportedOperationException(
-					"Uninstalling a JDK is not supported by " + getClass().getName());
-		}
-		manager().uninstallJdk(jdk);
+		throw new UnsupportedOperationException(
+				"Uninstalling JDKs is not supported by " + getClass().getName());
 	}
 
 	class Predicates {

@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -99,12 +100,12 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	 * available. This only needs to be implemented for providers that are
 	 * updatable.
 	 *
-	 * @param jdk The identifier of the JDK to install
+	 * @param id The identifier of the JDK to install
 	 * @return A path to the requested JDK
 	 */
 	@NonNull
-	protected Path getJdkPath(@NonNull String jdk) {
-		return jdksRoot.resolve(jdk);
+	protected Path getJdkPath(@NonNull String id) {
+		return jdksRoot.resolve(id);
 	}
 
 	protected Predicate<Path> sameJdk(Path jdkRoot) {
@@ -126,27 +127,28 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	protected Jdk.@Nullable InstalledJdk createJdk(Path home) {
-		return createJdk(home, true);
-	}
-
-	protected Jdk.@Nullable InstalledJdk createJdk(Path home, boolean fixedVersion) {
 		String name = home.getFileName().toString();
 		if (acceptFolder(home)) {
-			return createJdk(jdkId(name), home, null, fixedVersion, null);
+			return createJdk(jdkId(name), home, null, null);
 		}
 		return null;
-	}
-
-	protected String jdkId(String name) {
-		return name + "-" + name();
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
 		return isValidId(jdkFolder.getFileName().toString()) && JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
+	private final Pattern validId = Pattern.compile("^[a-zA-Z0-9._+-]+$");
+
 	@Override
 	public boolean isValidId(@NonNull String id) {
-		return id.endsWith("-" + name());
+		return id.endsWith("-" + name()) && validId.matcher(id).matches();
+	}
+
+	public String jdkId(String name) {
+		if (!validId.matcher(name).matches()) {
+			throw new IllegalArgumentException("Invalid JDK id: " + name);
+		}
+		return name + "-" + name();
 	}
 }

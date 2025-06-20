@@ -40,9 +40,14 @@ public class MultiHomeJdkProvider extends BaseJdkProvider {
 			.filter(entry -> entry.getKey().startsWith("JAVA_HOME_"))
 			.map(entry -> Paths.get(entry.getValue()))
 			.filter(Files::isDirectory)
-			.map(jdkHome -> createJdk(Discovery.PROVIDER_ID, jdkHome, null, false, null))
+			.map(jdkHome -> createJdk(Discovery.PROVIDER_ID, jdkHome, null, null))
 			.filter(Objects::nonNull)
 			.collect(Collectors.toList());
+	}
+
+	@Override
+	public boolean hasFixedVersions() {
+		return false;
 	}
 
 	public static class Discovery implements JdkDiscovery {
