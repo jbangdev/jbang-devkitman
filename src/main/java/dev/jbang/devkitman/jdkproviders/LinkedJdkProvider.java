@@ -50,7 +50,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		String[] parts = idOrToken.split("@", 2);
 		if (parts.length == 2 && isValidId(parts[0]) && isValidPath(parts[1])) {
 			Path jdkPath = Paths.get(parts[1]);
-			if (super.acceptFolder(jdkPath)) {
+			if (JavaUtils.hasJavacCmd(jdkPath)) {
 				Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(jdkPath);
 				if (!version.isPresent()) {
 					throw new IllegalArgumentException(
