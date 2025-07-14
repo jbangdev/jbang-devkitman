@@ -106,8 +106,9 @@ public class BaseTest {
 	}
 
 	protected Path createMockJdk(int jdkVersion, BiConsumer<Path, String> init) {
-		Path jdkPath = config.installPath.resolve(String.valueOf(jdkVersion));
-		init.accept(jdkPath, jdkVersion + ".0.7");
+		String versionStr = jdkVersion + ".0.7";
+		Path jdkPath = config.installPath.resolve(versionStr + "-jbang");
+		init.accept(jdkPath, versionStr);
 		Path link = config.installPath.resolve("default");
 		if (!Files.exists(link)) {
 			FileUtils.createLink(link, jdkPath);
