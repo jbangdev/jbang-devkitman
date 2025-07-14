@@ -49,6 +49,8 @@ deploy:
   maven:
     mavenCentral:
       devkitman:
+        # workaround jreleaser 1.19.0 bug wrt maven central credentials
+        username: "Vjuu+gNF"
         active: ALWAYS
         url: https://central.sonatype.com/api/v1/publisher
         applyMavenCentralRules: true
