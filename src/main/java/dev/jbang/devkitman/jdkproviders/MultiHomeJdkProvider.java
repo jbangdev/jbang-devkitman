@@ -33,14 +33,14 @@ public class MultiHomeJdkProvider extends BaseJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk> listInstalled() {
+	public List<Jdk.InstalledJdk> listInstalled() {
 		return System.getenv()
 			.entrySet()
 			.stream()
 			.filter(entry -> entry.getKey().startsWith("JAVA_HOME_"))
 			.map(entry -> Paths.get(entry.getValue()))
 			.filter(Files::isDirectory)
-			.map(jdkHome -> createJdk(Discovery.PROVIDER_ID, jdkHome, null, false))
+			.map(jdkHome -> createJdk(Discovery.PROVIDER_ID, jdkHome, null, false, null))
 			.filter(Objects::nonNull)
 			.collect(Collectors.toList());
 	}

@@ -8,10 +8,12 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -21,6 +23,7 @@ import com.google.gson.GsonBuilder;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkInstaller;
+import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.*;
 
 /**
@@ -28,29 +31,40 @@ import dev.jbang.devkitman.util.*;
  * the Foojay Disco API.
  */
 public class FoojayJdkInstaller implements JdkInstaller {
-	protected final JdkFactory jdkFactory;
+	protected final JdkProvider jdkProvider;
+	protected final Function<String, String> versionToId;
 	protected RemoteAccessProvider remoteAccessProvider = RemoteAccessProvider.createDefaultRemoteAccessProvider();
 	protected String distro = DEFAULT_DISTRO;
 
-	public static final String FOOJAY_JDK_DOWNLOAD_URL = "https://api.foojay.io/disco/v3.0/directuris?";
 	public static final String FOOJAY_JDK_VERSIONS_URL = "https://api.foojay.io/disco/v3.0/packages?";
 
 	public static final String DEFAULT_DISTRO = "temurin,aoj";
 
+	private static final Comparator<JdkResult> majorVersionSort = Comparator
+		.comparingInt((JdkResult jdk) -> jdk.major_version)
+		.reversed();
+
 	private static final Logger LOGGER = Logger.getLogger(FoojayJdkInstaller.class.getName());
+
+	public static class JdkResultLinks {
+		public String pkg_download_redirect;
+	}
 
 	public static class JdkResult {
 		public String java_version;
 		public int major_version;
 		public String release_status;
+		public boolean directly_downloadable;
+		public JdkResultLinks links;
 	}
 
 	public static class VersionsResponse {
 		public List<JdkResult> result;
 	}
 
-	public FoojayJdkInstaller(@NonNull JdkFactory jdkFactory) {
-		this.jdkFactory = jdkFactory;
+	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider, @NonNull Function<String, String> versionToId) {
+		this.jdkProvider = jdkProvider;
+		this.versionToId = versionToId;
 	}
 
 	public @NonNull FoojayJdkInstaller remoteAccessProvider(@NonNull RemoteAccessProvider remoteAccessProvider) {
@@ -65,20 +79,49 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	@NonNull
 	@Override
-	public List<Jdk> listAvailable() {
+	public List<Jdk.AvailableJdk> listAvailable() {
+		return list(0, true, majorVersionSort).distinct().collect(Collectors.toList());
+	}
+
+	@Override
+	public Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
+		int djv = jdkProvider.manager().defaultJavaVersion;
+		Comparator<JdkResult> preferGaSort = (j1, j2) -> {
+			// Prefer versions equal to the default Java version
+			if (j1.major_version == djv && j2.major_version != djv) {
+				return -1;
+			} else if (j2.major_version == djv && j1.major_version != djv) {
+				return 1;
+			}
+			// Prefer GA releases over EA releases
+			if (!j1.release_status.equals(j2.release_status)) {
+				return j2.release_status.compareTo(j1.release_status);
+			}
+			// Prefer newer versions
+			return majorVersionSort.compare(j1, j2);
+		};
+		return list(version, openVersion, preferGaSort)
+			.findFirst()
+			.orElse(null);
+	}
+
+	private Stream<Jdk.AvailableJdk> list(Integer minVersion, boolean openVersion, Comparator<JdkResult> sortFunc) {
 		try {
-			Set<Jdk> result = new LinkedHashSet<>();
-			Consumer<String> addJdk = version -> {
-				result.add(jdkFactory.createJdk(jdkFactory.jdkId(version), null, version));
-			};
-			VersionsResponse res = readJsonFromUrl(getVersionsUrl(OsUtils.getOS(), OsUtils.getArch(), distro));
-			filterEA(res.result).forEach(jdk -> addJdk.accept(jdk.java_version));
-			// result.sort(Jdk::compareTo);
-			return Collections.unmodifiableList(new ArrayList<>(result));
+			VersionsResponse res = readJsonFromUrl(
+					getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distro));
+			return filterEA(res.result)
+				.stream()
+				.filter(jdk -> jdk.major_version == minVersion
+						|| (openVersion && jdk.major_version > minVersion))
+				.sorted(sortFunc)
+				.map(jdk -> new AvailableFoojayJdk(jdkProvider, versionToId.apply(jdk.java_version), jdk.java_version,
+						jdk.links.pkg_download_redirect, determineTags(jdk)));
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
 		}
 		return Collections.emptyList();
+		return Stream.empty();
+	}
 	}
 
 	private VersionsResponse readJsonFromUrl(String url) throws IOException {
@@ -117,15 +160,19 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			.collect(Collectors.toList());
 	}
 
-	@NonNull
 	@Override
-	public Jdk install(@NonNull Jdk jdk, Path jdkDir) {
-		int version = jdkVersion(jdk.id());
+	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk, Path jdkDir) {
+		if (!(jdk instanceof AvailableFoojayJdk)) {
+			throw new IllegalArgumentException(
+					"FoojayJdkInstaller can only install JDKs listed as available by itself");
+		}
+		AvailableFoojayJdk foojayJdk = (AvailableFoojayJdk) jdk;
+		int version = jdkVersion(foojayJdk.id());
 		LOGGER.log(
 				Level.INFO,
 				"Downloading JDK {0}. Be patient, this can take several minutes...",
 				version);
-		String url = getDownloadUrl(version, OsUtils.getOS(), OsUtils.getArch(), distro);
+		String url = foojayJdk.downloadUrl;
 		LOGGER.log(Level.FINE, "Downloading {0}", url);
 		Path jdkTmpDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".tmp");
 		Path jdkOldDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".old");
@@ -144,7 +191,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			}
 			Files.move(jdkTmpDir, jdkDir);
 			FileUtils.deletePath(jdkOldDir);
-			Jdk newJdk = jdkFactory.createJdk(jdk.id(), jdkDir, null);
+			Jdk.InstalledJdk newJdk = jdkProvider.createJdk(foojayJdk.id(), jdkDir, null, true, null);
 			if (newJdk == null) {
 				throw new IllegalStateException("Cannot obtain version of recently installed JDK");
 			}
@@ -166,30 +213,30 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	@Override
-	public void uninstall(@NonNull Jdk jdk) {
+	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		if (jdk.isInstalled()) {
 			FileUtils.deletePath(jdk.home());
 		}
 	}
 
-	private static String getDownloadUrl(
-			int version, OsUtils.OS os, OsUtils.Arch arch, String distro) {
-		return FOOJAY_JDK_DOWNLOAD_URL + getUrlParams(version, os, arch, distro);
-	}
-
-	private static String getVersionsUrl(OsUtils.OS os, OsUtils.Arch arch, String distro) {
-		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(null, os, arch, distro);
+	private static String getVersionsUrl(int minVersion, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,
+			String distro) {
+		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(minVersion, openVersion, os, arch, distro);
 	}
 
 	private static String getUrlParams(
-			Integer version, OsUtils.OS os, OsUtils.Arch arch, String distro) {
+			int version, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch, String distro) {
 		Map<String, String> params = new HashMap<>();
-		if (version != null) {
-			params.put("version", String.valueOf(version));
+		if (version > 0) {
+			String v = String.valueOf(version);
+			if (openVersion) {
+				v += "..<999";
+			}
+			params.put("version", v);
 		}
 
 		if (distro == null) {
-			if (version == null || version == 8 || version == 11 || version >= 17) {
+			if (version == 0 || version == 8 || version == 11 || version >= 17) {
 				distro = "temurin";
 			} else {
 				distro = "aoj";
@@ -252,9 +299,13 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		return JavaUtils.parseJavaVersion(jdk);
 	}
 
-	public interface JdkFactory {
-		String jdkId(String name);
+	static class AvailableFoojayJdk extends Jdk.AvailableJdk.Default {
+		public final String downloadUrl;
 
-		Jdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version);
+		AvailableFoojayJdk(@NonNull JdkProvider provider, @NonNull String id, @NonNull String version,
+				@NonNull String downloadUrl) {
+			super(provider, id, version, null);
+			this.downloadUrl = downloadUrl;
+		}
 	}
 }

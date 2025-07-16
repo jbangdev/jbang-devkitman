@@ -40,9 +40,8 @@ public class ScoopJdkProvider extends BaseFoldersJdkProvider {
 		return jdkFolder.getFileName().startsWith("openjdk") && super.acceptFolder(jdkFolder);
 	}
 
-	@Nullable
 	@Override
-	protected Jdk createJdk(Path home) {
+	protected Jdk.@Nullable InstalledJdk createJdk(Path home) {
 		try {
 			// Try to resolve any links
 			home = home.toRealPath();

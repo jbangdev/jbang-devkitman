@@ -30,8 +30,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		super(jdksRoot);
 	}
 
-	@Nullable
-	protected Jdk createJdk(Path home) {
+	protected Jdk.@Nullable InstalledJdk createJdk(Path home) {
 		return createJdk(home, false);
 	}
 
@@ -46,7 +45,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	public @Nullable Jdk getAvailableByIdOrToken(String idOrToken) {
+	public Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
 		String[] parts = idOrToken.split("@", 2);
 		if (parts.length == 2 && isValidId(parts[0]) && isValidPath(parts[1])) {
 			Path jdkPath = Paths.get(parts[1]);
@@ -56,7 +55,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdkPath);
 				}
-				return createJdk(idOrToken, null, version.get(), false);
+				return new Jdk.AvailableJdk.Default(this, idOrToken, version.get(), null);
 			}
 			return null;
 		} else {
@@ -81,10 +80,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	public @NonNull Jdk install(@NonNull Jdk jdk) {
-		if (jdk.isInstalled()) {
-			return jdk;
-		}
+	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk) {
 		// Check this Jdk's id follows our special format
 		String[] parts = jdk.id().split("@", 2);
 		if (parts.length != 2 || !isValidPath(parts[1])) {
@@ -93,7 +89,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		String id = parts[0];
 		Path jdkPath = Paths.get(parts[1]);
 		// If there's an existing installed Jdk with the same id, uninstall it
-		Jdk existingJdk = getInstalledById(jdkId(id));
+		Jdk.InstalledJdk existingJdk = getInstalledById(jdkId(id));
 		if (existingJdk != null && existingJdk.isInstalled() && !jdk.equals(existingJdk)) {
 			LOGGER.log(
 					Level.FINE,
@@ -105,13 +101,13 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		FileUtils.deletePath(linkPath);
 		// Now create the new link
 		FileUtils.createLink(linkPath, jdkPath);
-		Jdk newJdk = Objects.requireNonNull(createJdk(linkPath));
+		Jdk.InstalledJdk newJdk = Objects.requireNonNull(createJdk(linkPath));
 		LOGGER.log(Level.INFO, "JDK {0} has been linked to: {1}", new Object[] { id, jdkPath });
 		return newJdk;
 	}
 
 	@Override
-	public void uninstall(@NonNull Jdk jdk) {
+	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		if (jdk.isInstalled()) {
 			FileUtils.deletePath(jdk.home());
 			LOGGER.log(Level.INFO, "JDK {0} has been uninstalled", new Object[] { jdk.id() });

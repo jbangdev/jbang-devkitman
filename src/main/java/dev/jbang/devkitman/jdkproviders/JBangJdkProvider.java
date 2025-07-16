@@ -21,8 +21,7 @@ import dev.jbang.devkitman.util.JavaUtils;
  * provided by the Foojay Disco API. They get installed in the user's JBang
  * folder.
  */
-public class JBangJdkProvider extends BaseFoldersJdkProvider
-		implements FoojayJdkInstaller.JdkFactory {
+public class JBangJdkProvider extends BaseFoldersJdkProvider {
 	protected JdkInstaller jdkInstaller;
 
 	public JBangJdkProvider() {
@@ -31,7 +30,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 
 	public JBangJdkProvider(Path jdksRoot) {
 		super(jdksRoot);
-		jdkInstaller = new FoojayJdkInstaller(this);
+		jdkInstaller = new FoojayJdkInstaller(this, this::jdkId);
 	}
 
 	@Override
@@ -39,42 +38,45 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 		return "The JDKs managed by JBang.";
 	}
 
-	public JBangJdkProvider installer(JdkInstaller jdkInstaller) {
+	public JBangJdkProvider installer(@NonNull JdkInstaller jdkInstaller) {
 		this.jdkInstaller = jdkInstaller;
 		return this;
 	}
 
 	@NonNull
 	@Override
-	public List<Jdk> listAvailable() {
+	public List<Jdk.AvailableJdk> listAvailable() {
 		return jdkInstaller.listAvailable();
 	}
 
 	@Override
-	public @Nullable Jdk getAvailableByIdOrToken(String idOrToken) {
+	public Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
+		return jdkInstaller.getAvailableByVersion(version, openVersion);
+	}
+
+	@Override
+	public Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
 		return jdkInstaller.getAvailableByIdOrToken(idOrToken);
 	}
 
-	@NonNull
 	@Override
-	public Jdk install(@NonNull Jdk jdk) {
+	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk) {
 		return jdkInstaller.install(jdk, getJdkPath(jdk.id()));
 	}
 
 	@Override
-	public void uninstall(@NonNull Jdk jdk) {
+	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		super.uninstall(jdk);
 		jdkInstaller.uninstall(jdk);
 	}
 
-	@Override
-	public Jdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version) {
-		return super.createJdk(id, home, version, true);
-	}
+//	@Override
+//	public Jdk.InstalledJdk supplyJdk(@NonNull String id, @Nullable Path home, @Nullable String version) {
+//		return super.createJdk(id, home, version, true, null);
+//	}
 
-	@Nullable
 	@Override
-	public Jdk getInstalledByVersion(int version, boolean openVersion) {
+	public Jdk.@Nullable InstalledJdk getInstalledByVersion(int version, boolean openVersion) {
 		Path jdk = jdksRoot.resolve(Integer.toString(version));
 		if (Files.isDirectory(jdk)) {
 			return createJdk(jdk);
@@ -169,7 +171,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider
 		public JdkProvider create(Config config) {
 			JBangJdkProvider prov = new JBangJdkProvider(config.installPath);
 			return prov
-				.installer(new FoojayJdkInstaller(prov)
+				.installer(new FoojayJdkInstaller(prov, prov::jdkId)
 					.distro(config.properties.getOrDefault("distro", null)));
 			// TODO make RAP configurable
 			// .remoteAccessProvider(RemoteAccessProvider.createDefaultRemoteAccessProvider(config.cachePath));

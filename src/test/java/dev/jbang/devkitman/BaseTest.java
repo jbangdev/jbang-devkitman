@@ -176,7 +176,7 @@ public class BaseTest {
 		RemoteAccessProvider rap = new RemoteAccessProvider() {
 			@Override
 			public Path downloadFromUrl(String url) throws IOException {
-				if (!url.startsWith("https://api.foojay.io/disco/v3.0/directuris?")) {
+				if (!url.startsWith("https://api.foojay.io/disco/v3.0/ids/") || !url.endsWith("/redirect")) {
 					throw new IOException("Unexpected URL: " + url);
 				}
 				return testJdkFile;
@@ -195,7 +195,7 @@ public class BaseTest {
 		};
 
 		JBangJdkProvider jbang = new JBangJdkProvider(config.installPath);
-		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang);
+		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang, jbang::jdkId);
 		installer.remoteAccessProvider(rap);
 		jbang.installer(installer);
 		return jbang;

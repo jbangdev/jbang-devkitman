@@ -44,8 +44,17 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	@Override
-	public @Nullable Jdk getAvailableByIdOrToken(String idOrToken) {
-		if (isValidId(idOrToken) && super.canUpdate()) {
+	public Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
+		if (canUpdate()) {
+			return super.getAvailableByVersion(version, openVersion);
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
+		if (isValidId(idOrToken) && canUpdate()) {
 			return super.getAvailableByIdOrToken(idOrToken);
 		} else {
 			return null;
@@ -54,7 +63,7 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk> listInstalled() {
+	public List<Jdk.InstalledJdk> listInstalled() {
 		if (Files.isDirectory(jdksRoot)) {
 			try (Stream<Path> jdkPaths = listJdkPaths()) {
 				return jdkPaths.map(this::createJdk)
@@ -67,15 +76,13 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 		return Collections.emptyList();
 	}
 
-	@Nullable
 	@Override
-	public Jdk getInstalledById(@NonNull String id) {
+	public Jdk.@Nullable InstalledJdk getInstalledById(@NonNull String id) {
 		return getInstalledByPath(getJdkPath(id));
 	}
 
-	@Nullable
 	@Override
-	public Jdk getInstalledByPath(@NonNull Path jdkPath) {
+	public Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
 		if (jdkPath.startsWith(jdksRoot) && Files.isDirectory(jdkPath) && acceptFolder(jdkPath)) {
 			return createJdk(jdkPath);
 		}
@@ -115,16 +122,14 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 		return Stream.empty();
 	}
 
-	@Nullable
-	protected Jdk createJdk(Path home) {
+	protected Jdk.@Nullable InstalledJdk createJdk(Path home) {
 		return createJdk(home, true);
 	}
 
-	@Nullable
-	protected Jdk createJdk(Path home, boolean fixedVersion) {
+	protected Jdk.@Nullable InstalledJdk createJdk(Path home, boolean fixedVersion) {
 		String name = home.getFileName().toString();
 		if (acceptFolder(home)) {
-			return createJdk(jdkId(name), home, null, fixedVersion);
+			return createJdk(jdkId(name), home, null, fixedVersion, null);
 		}
 		return null;
 	}
