@@ -23,10 +23,11 @@ import dev.jbang.devkitman.util.OsUtils;
 
 public class JdkManager {
 	public static final int DEFAULT_JAVA_VERSION = 21;
+	public final int defaultJavaVersion;
+
 	private static final Logger LOGGER = Logger.getLogger(JdkManager.class.getName());
 
 	private final List<JdkProvider> providers;
-	private final int defaultJavaVersion;
 
 	private final JdkProvider defaultProvider;
 
@@ -117,8 +118,7 @@ public class JdkManager {
 	 * @throws IllegalArgumentException If no JDK could be found at all or if one
 	 *                                  failed to install
 	 */
-	@NonNull
-	public Jdk getOrInstallJdk(String versionOrId) {
+	public Jdk.@NonNull InstalledJdk getOrInstallJdk(String versionOrId) {
 		return getOrInstallJdk(versionOrId, JdkProvider.Predicates.all);
 	}
 
@@ -133,8 +133,8 @@ public class JdkManager {
 	 * @throws IllegalArgumentException If no JDK could be found at all or if one
 	 *                                  failed to install
 	 */
-	@NonNull
-	public Jdk getOrInstallJdk(String versionOrId, @NonNull Predicate<JdkProvider> providerFilter) {
+	public Jdk.@NonNull InstalledJdk getOrInstallJdk(String versionOrId,
+			@NonNull Predicate<JdkProvider> providerFilter) {
 		if (versionOrId != null) {
 			if (JavaUtils.isRequestedVersion(versionOrId)) {
 				return getOrInstallJdkByVersion(
@@ -161,8 +161,7 @@ public class JdkManager {
 	 * @throws IllegalArgumentException If no JDK could be found at all or if one
 	 *                                  failed to install
 	 */
-	@NonNull
-	private Jdk getOrInstallJdkByVersion(
+	private Jdk.@NonNull InstalledJdk getOrInstallJdkByVersion(
 			int requestedVersion,
 			boolean openVersion,
 			@NonNull Predicate<JdkProvider> providerFilter) {
@@ -176,10 +175,9 @@ public class JdkManager {
 				throw new IllegalArgumentException("No suitable JDK was found");
 			}
 		}
-		jdk = ensureInstalled(jdk);
-		LOGGER.log(Level.FINE, "Using JDK: {0}", jdk);
-
-		return jdk;
+		Jdk.InstalledJdk ijdk = ensureInstalled(jdk);
+		LOGGER.log(Level.FINE, "Using JDK: {0}", ijdk);
+		return ijdk;
 	}
 
 	/**
@@ -193,8 +191,7 @@ public class JdkManager {
 	 * @throws IllegalArgumentException If no JDK could be found at all or if one
 	 *                                  failed to install
 	 */
-	@NonNull
-	private Jdk getOrInstallJdkById(
+	private Jdk.@NonNull InstalledJdk getOrInstallJdkById(
 			@NonNull String requestedId, @NonNull Predicate<JdkProvider> providerFilter) {
 		LOGGER.log(Level.FINE, "Looking for JDK: {0}", requestedId);
 		Jdk jdk = getJdkById(requestedId, providerFilter);
@@ -202,20 +199,23 @@ public class JdkManager {
 			throw new IllegalArgumentException(
 					"No suitable JDK was found for requested id: " + requestedId);
 		}
-		jdk = ensureInstalled(jdk);
-		LOGGER.log(Level.FINE, "Using JDK: {0}", jdk);
-
-		return jdk;
+		Jdk.InstalledJdk ijdk = ensureInstalled(jdk);
+		LOGGER.log(Level.FINE, "Using JDK: {0}", ijdk);
+		return ijdk;
 	}
 
-	private Jdk ensureInstalled(Jdk jdk) {
+	private Jdk.@NonNull InstalledJdk ensureInstalled(@NonNull Jdk jdk) {
+		Jdk.InstalledJdk ijdk;
 		if (!jdk.isInstalled()) {
-			jdk = jdk.install();
+			Jdk.AvailableJdk ajdk = (Jdk.AvailableJdk) jdk;
+			ijdk = ajdk.install();
 			if (getDefaultJdk() == null) {
-				setDefaultJdk(jdk);
+				setDefaultJdk(ijdk);
 			}
+		} else {
+			ijdk = (Jdk.InstalledJdk) jdk;
 		}
-		return jdk;
+		return ijdk;
 	}
 
 	/**
@@ -344,8 +344,7 @@ public class JdkManager {
 	 * @param versionOrId A version pattern, id or <code>null</code>
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
-	@Nullable
-	public Jdk getInstalledJdk(String versionOrId) {
+	public Jdk.@Nullable InstalledJdk getInstalledJdk(String versionOrId) {
 		return getInstalledJdk(versionOrId, JdkProvider.Predicates.all);
 	}
 
@@ -358,8 +357,8 @@ public class JdkManager {
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
-	@Nullable
-	public Jdk getInstalledJdk(String versionOrId, @NonNull Predicate<JdkProvider> providerFilter) {
+	public Jdk.@Nullable InstalledJdk getInstalledJdk(String versionOrId,
+			@NonNull Predicate<JdkProvider> providerFilter) {
 		if (versionOrId != null) {
 			if (JavaUtils.isRequestedVersion(versionOrId)) {
 				return getInstalledJdkByVersion(
@@ -384,8 +383,7 @@ public class JdkManager {
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
-	@Nullable
-	private Jdk getInstalledJdkByVersion(
+	private Jdk.@Nullable InstalledJdk getInstalledJdkByVersion(
 			int version, boolean openVersion, @NonNull Predicate<JdkProvider> providerFilter) {
 		return providers(providerFilter)
 			.map(p -> p.getInstalledByVersion(version, openVersion))
@@ -403,8 +401,7 @@ public class JdkManager {
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
-	@Nullable
-	private Jdk getInstalledJdkById(
+	private Jdk.@Nullable InstalledJdk getInstalledJdkById(
 			String requestedId, @NonNull Predicate<JdkProvider> providerFilter) {
 		return providers(providerFilter)
 			.map(p -> p.getInstalledById(requestedId))
@@ -413,22 +410,24 @@ public class JdkManager {
 			.orElse(null);
 	}
 
-	@Nullable
-	private Jdk getAvailableJdkByVersion(int version, boolean openVersion) {
-		Optional<Jdk> jdk = getJdkBy(
-				listAvailableJdks().stream(),
-				Jdk.Predicates.forVersion(version, openVersion));
-		return jdk.orElse(null);
+	private Jdk.@Nullable AvailableJdk getAvailableJdkByVersion(int version, boolean openVersion) {
+		return providers(JdkProvider.Predicates.canUpdate)
+			.map(p -> p.getAvailableByVersion(version, openVersion))
+			.filter(Objects::nonNull)
+			.findFirst()
+			.orElse(null);
 	}
 
-	@Nullable
-	private Jdk getAvailableJdkById(String id) {
-		Optional<Jdk> jdk = getJdkBy(listAvailableJdks().stream(), Jdk.Predicates.id(id));
-		return jdk.orElse(null);
+	private Jdk.@Nullable AvailableJdk getAvailableJdkById(String id) {
+		return providers(JdkProvider.Predicates.canUpdate)
+			.map(p -> p.getAvailableByIdOrToken(id))
+			.filter(Objects::nonNull)
+			.findFirst()
+			.orElse(null);
 	}
 
-	public void uninstallJdk(Jdk jdk) {
-		Jdk defaultJdk = getDefaultJdk();
+	public void uninstallJdk(Jdk.@NonNull InstalledJdk jdk) {
+		Jdk.InstalledJdk defaultJdk = getDefaultJdk();
 		if (OsUtils.isWindows()) {
 			// On Windows we have to check nobody is currently using the JDK or we could
 			// be causing all kinds of trouble
@@ -461,7 +460,7 @@ public class JdkManager {
 		}
 
 		if (resetDefault) {
-			Optional<Jdk> newjdk = nextInstalledJdk(jdk.majorVersion(), JdkProvider.Predicates.canUpdate);
+			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(jdk.majorVersion(), JdkProvider.Predicates.canUpdate);
 			if (!newjdk.isPresent()) {
 				newjdk = prevInstalledJdk(jdk.majorVersion(), JdkProvider.Predicates.canUpdate);
 			}
@@ -493,7 +492,7 @@ public class JdkManager {
 		if (!Files.isDirectory(jdkPath)) {
 			throw new IllegalArgumentException("Unable to resolve path as directory: " + jdkPath);
 		}
-		Jdk linkedJdk = linked.getAvailableByIdOrToken(id + "@" + jdkPath);
+		Jdk.AvailableJdk linkedJdk = linked.getAvailableByIdOrToken(id + "@" + jdkPath);
 		if (linkedJdk == null) {
 			throw new IllegalArgumentException("Unable to create link to JDK in path: " + jdkPath);
 		}
@@ -514,7 +513,7 @@ public class JdkManager {
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return an optional JDK
 	 */
-	private Optional<Jdk> nextInstalledJdk(
+	private Optional<Jdk.InstalledJdk> nextInstalledJdk(
 			int minVersion, @NonNull Predicate<JdkProvider> providerFilter) {
 		return listInstalledJdks(providerFilter)
 			.filter(jdk -> jdk.majorVersion() >= minVersion)
@@ -530,7 +529,7 @@ public class JdkManager {
 	 * @param providerFilter Only return JDKs from providers that match the filter
 	 * @return an optional JDK
 	 */
-	private Optional<Jdk> prevInstalledJdk(
+	private Optional<Jdk.InstalledJdk> prevInstalledJdk(
 			int maxVersion, @NonNull Predicate<JdkProvider> providerFilter) {
 		return listInstalledJdks(providerFilter)
 			.filter(jdk -> jdk.majorVersion() <= maxVersion)
@@ -545,23 +544,24 @@ public class JdkManager {
 	 * @param maxVersion the maximum version to return
 	 * @return an optional JDK
 	 */
-	private Optional<Jdk> prevAvailableJdk(int maxVersion) {
+	private Optional<Jdk.AvailableJdk> prevAvailableJdk(int maxVersion) {
 		return listAvailableJdks().stream()
 			.filter(jdk -> jdk.majorVersion() <= maxVersion)
 			.max(Jdk::compareTo);
 	}
 
-	public List<Jdk> listAvailableJdks() {
+	public List<Jdk.AvailableJdk> listAvailableJdks() {
 		return providers(JdkProvider.Predicates.canUpdate)
 			.flatMap(p -> p.listAvailable().stream())
+			.sorted(Comparator.comparingInt(Jdk::majorVersion).reversed())
 			.collect(Collectors.toList());
 	}
 
-	public List<Jdk> listInstalledJdks() {
+	public List<Jdk.InstalledJdk> listInstalledJdks() {
 		return listInstalledJdks(JdkProvider.Predicates.all).collect(Collectors.toList());
 	}
 
-	private Stream<Jdk> listInstalledJdks(Predicate<JdkProvider> providerFilter) {
+	private Stream<Jdk.InstalledJdk> listInstalledJdks(Predicate<JdkProvider> providerFilter) {
 		return providers(providerFilter).flatMap(p -> p.listInstalled().stream());
 	}
 
@@ -569,27 +569,20 @@ public class JdkManager {
 		return defaultProvider != null;
 	}
 
-	@Nullable
-	public Jdk getDefaultJdk() {
+	public Jdk.@Nullable InstalledJdk getDefaultJdk() {
 		return hasDefaultProvider()
 				? defaultProvider.getInstalledById(
 						DefaultJdkProvider.Discovery.PROVIDER_ID)
 				: null;
 	}
 
-	public void setDefaultJdk(Jdk jdk) {
+	public void setDefaultJdk(Jdk.@NonNull InstalledJdk jdk) {
 		if (hasDefaultProvider()) {
-			Jdk defJdk = getDefaultJdk();
+			Jdk.InstalledJdk defJdk = getDefaultJdk();
 			// Check if the new jdk exists and isn't the same as the current default
 			if (jdk.isInstalled() && !jdk.equals(defJdk)) {
 				// Special syntax for "installing" the default JDK
-				Jdk newDefJdk = createJdk(
-						defaultProvider,
-						DefaultJdkProvider.Discovery.PROVIDER_ID,
-						jdk.home(),
-						jdk.version(),
-						false,
-						jdk.tags());
+				Jdk.AvailableJdk newDefJdk = defaultProvider.getAvailableByIdOrToken(jdk.home().toString());
 				if (newDefJdk == null) {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdk.home());
@@ -601,7 +594,7 @@ public class JdkManager {
 	}
 
 	public void removeDefaultJdk() {
-		Jdk defJdk = getDefaultJdk();
+		Jdk.InstalledJdk defJdk = getDefaultJdk();
 		if (defJdk != null) {
 			defJdk.uninstall();
 		}
@@ -611,47 +604,5 @@ public class JdkManager {
 		Path currentJdk = Paths.get(System.getProperty("java.home"));
 		return providers(JdkProvider.Predicates.canUpdate)
 			.anyMatch(p -> p.getInstalledByPath(currentJdk) != null);
-	}
-
-	@Nullable
-	public Jdk createJdk(@NonNull JdkProvider provider, @NonNull String id, @Nullable Path home,
-			@Nullable String version, boolean fixedVersion, @Nullable Set<String> tags) {
-		Optional<String> v = version != null ? Optional.of(version) : JavaUtils.resolveJavaVersionStringFromPath(home);
-		if (v.isPresent()) {
-			Set<String> ts = tags != null ? tags : determineTagsForJdk(home);
-			return new Jdk.Default(provider, id, home, v.get(), fixedVersion, ts);
-		} else {
-			return null;
-		}
-	}
-
-	@NonNull
-	public Set<String> determineTagsForJdk(@Nullable Path home) {
-		if (home == null) {
-			return Collections.emptySet();
-		}
-		Set<String> tags = new HashSet<>();
-		if (JavaUtils.hasJavacCmd(home)) {
-			tags.add(Jdk.Default.Tags.Jdk.name());
-		} else if (JavaUtils.hasJavaCmd(home)) {
-			tags.add(Jdk.Default.Tags.Jre.name());
-		}
-		Optional<String> graalVersion = JavaUtils.readGraalVMVersionStringFromReleaseFile(home);
-		if (graalVersion.isPresent()) {
-			tags.add(Jdk.Default.Tags.Graalvm.name());
-			if (JavaUtils.hasNativeImageCmd(home)) {
-				tags.add(Jdk.Default.Tags.Native.name());
-			}
-		}
-		Path javafxProps = home.resolve("lib").resolve("javafx.properties");
-		if (Files.exists(javafxProps)) {
-			tags.add(Jdk.Default.Tags.Javafx.name());
-		}
-		return tags;
-	}
-
-	@NonNull
-	static Optional<Jdk> getJdkBy(@NonNull Stream<Jdk> jdks, @NonNull Predicate<Jdk> jdkFilter) {
-		return jdks.filter(jdkFilter).findFirst();
 	}
 }

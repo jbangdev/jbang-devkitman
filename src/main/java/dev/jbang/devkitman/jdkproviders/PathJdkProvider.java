@@ -30,7 +30,7 @@ public class PathJdkProvider extends BaseJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk> listInstalled() {
+	public List<Jdk.InstalledJdk> listInstalled() {
 		Path jdkHome = null;
 		Path javac = OsUtils.searchPath("javac");
 		if (javac != null) {
@@ -38,7 +38,7 @@ public class PathJdkProvider extends BaseJdkProvider {
 			jdkHome = javac.getParent().getParent();
 		}
 		if (jdkHome != null) {
-			Jdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false);
+			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false, null);
 			if (jdk != null) {
 				return Collections.singletonList(jdk);
 			}

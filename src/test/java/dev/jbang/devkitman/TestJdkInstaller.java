@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,10 +14,27 @@ import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 public class TestJdkInstaller extends BaseTest {
 
 	@Test
-	void testInstall() throws IOException {
+	void testListAvailable() throws IOException {
 		JdkManager jm = jdkManager("jbang");
-		Jdk jdk = jm.getOrInstallJdk("12");
+		List<Jdk.AvailableJdk> jdks = jm.listAvailableJdks();
+		assertThat(jdks, hasSize(18));
+		assertThat(jdks.get(0).majorVersion(), is(25));
+		assertThat(jdks.get(jdks.size() - 1).majorVersion(), is(8));
+	}
+
+	@Test
+	void testInstallExact() throws IOException {
+		JdkManager jm = jdkManager("jbang");
+		Jdk.InstalledJdk jdk = jm.getOrInstallJdk("12");
 		assertThat(jdk.provider(), instanceOf(JBangJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "12"));
+	}
+
+	@Test
+	void testInstallOpen() throws IOException {
+		JdkManager jm = jdkManager("jbang");
+		Jdk.InstalledJdk jdk = jm.getOrInstallJdk("12+");
+		assertThat(jdk.provider(), instanceOf(JBangJdkProvider.class));
+		assertThat(jdk.home().toString(), endsWith(File.separator + "21"));
 	}
 }

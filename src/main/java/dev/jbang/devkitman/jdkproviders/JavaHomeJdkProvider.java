@@ -31,10 +31,10 @@ public class JavaHomeJdkProvider extends BaseJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk> listInstalled() {
+	public List<Jdk.InstalledJdk> listInstalled() {
 		Path jdkHome = JavaUtils.getJavaHomeEnv();
 		if (jdkHome != null && Files.isDirectory(jdkHome)) {
-			Jdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false);
+			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false, null);
 			if (jdk != null) {
 				return Collections.singletonList(jdk);
 			}

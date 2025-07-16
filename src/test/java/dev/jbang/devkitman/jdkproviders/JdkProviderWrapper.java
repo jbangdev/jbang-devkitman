@@ -37,37 +37,37 @@ public class JdkProviderWrapper implements JdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk> listInstalled() {
+	public @NonNull List<Jdk.InstalledJdk> listInstalled() {
 		return provider.listInstalled();
 	}
 
 	@Override
-	public Jdk getInstalledById(@NonNull String id) {
+	public Jdk.InstalledJdk getInstalledById(@NonNull String id) {
 		return provider.getInstalledById(id);
 	}
 
 	@Override
-	public Jdk getInstalledByPath(@NonNull Path jdkPath) {
+	public Jdk.InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
 		return provider.getInstalledByPath(jdkPath);
 	}
 
 	@Override
-	public @NonNull List<Jdk> listAvailable() {
+	public @NonNull List<Jdk.AvailableJdk> listAvailable() {
 		return provider.listAvailable();
 	}
 
 	@Override
-	public Jdk getAvailableByIdOrToken(String idOrToken) {
+	public Jdk.AvailableJdk getAvailableByIdOrToken(String idOrToken) {
 		return provider.getAvailableByIdOrToken(idOrToken);
 	}
 
 	@Override
-	public @NonNull Jdk install(@NonNull Jdk jdk) {
+	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk) {
 		return provider.install(jdk);
 	}
 
 	@Override
-	public void uninstall(@NonNull Jdk jdk) {
+	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		provider.uninstall(jdk);
 	}
 }

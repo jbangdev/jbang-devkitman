@@ -29,12 +29,12 @@ public class CurrentJdkProvider extends BaseJdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk> listInstalled() {
+	public @NonNull List<Jdk.InstalledJdk> listInstalled() {
 		String jh = System.getProperty("java.home");
 		if (jh != null) {
 			Path jdkHome = Paths.get(jh);
 			jdkHome = JavaUtils.jre2jdk(jdkHome);
-			Jdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false);
+			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, false, null);
 			if (jdk != null) {
 				return Collections.singletonList(jdk);
 			}

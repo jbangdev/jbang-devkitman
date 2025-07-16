@@ -3,6 +3,7 @@ package dev.jbang.devkitman.jdkproviders;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,20 +28,20 @@ public class MockJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk> listAvailable() {
+	public @NonNull List<Jdk.AvailableJdk> listAvailable() {
 		return Arrays.stream(versions)
-			.mapToObj(v -> createJdk(v + "-dummy", null, v + ".0.7", true))
+			.mapToObj(v -> new Jdk.AvailableJdk.Default(this, v + "-dummy", v + ".0.7", null))
 			.collect(Collectors.toList());
 	}
 
 	@Override
-	public @NonNull Jdk install(@NonNull Jdk jdk) {
+	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk) {
 		Path jdkPath = mockJdk.apply(jdk.majorVersion());
-		return createJdk(jdk.id(), jdkPath, jdk.version(), true);
+		return Objects.requireNonNull(createJdk(jdk.id(), jdkPath, jdk.version(), true, null));
 	}
 
 	@Override
-	public void uninstall(@NonNull Jdk jdk) {
+	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		if (jdk.isInstalled()) {
 			FileUtils.deletePath(jdk.home());
 		}

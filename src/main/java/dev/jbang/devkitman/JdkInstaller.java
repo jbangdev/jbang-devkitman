@@ -23,9 +23,25 @@ public interface JdkInstaller {
 	 * @return List of <code>Jdk</code> objects
 	 */
 	@NonNull
-	default List<Jdk> listAvailable() {
+	default List<Jdk.AvailableJdk> listAvailable() {
 		throw new UnsupportedOperationException(
 				"Listing available JDKs is not supported by " + getClass().getName());
+	}
+
+	/**
+	 * Determines if a JDK matching the given version is available for installation
+	 * by this installer and if so returns its respective <code>Jdk</code> object,
+	 * otherwise it returns <code>null</code>.
+	 *
+	 * @param version     The (major) version of the JDK to return
+	 * @param openVersion Return newer version if available
+	 * @return A <code>Jdk</code> object or <code>null</code>
+	 */
+	default Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
+		return listAvailable().stream()
+			.filter(Jdk.Predicates.forVersion(version, openVersion))
+			.findFirst()
+			.orElse(null);
 	}
 
 	/**
@@ -41,9 +57,10 @@ public interface JdkInstaller {
 	 * @param idOrToken The id or token to look for
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
-	@Nullable
-	default Jdk getAvailableByIdOrToken(String idOrToken) {
-		return JdkManager.getJdkBy(listAvailable().stream(), Jdk.Predicates.id(idOrToken))
+	default Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
+		return listAvailable().stream()
+			.filter(Jdk.Predicates.id(idOrToken))
+			.findFirst()
 			.orElse(null);
 	}
 
@@ -55,8 +72,7 @@ public interface JdkInstaller {
 	 * @return A <code>Jdk</code> object
 	 * @throws UnsupportedOperationException if the provider can not update
 	 */
-	@NonNull
-	default Jdk install(@NonNull Jdk jdk, Path installDir) {
+	default Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk, Path installDir) {
 		throw new UnsupportedOperationException(
 				"Installing a JDK is not supported by " + getClass().getName());
 	}
@@ -67,7 +83,7 @@ public interface JdkInstaller {
 	 * @param jdk The <code>Jdk</code> object of the JDK to uninstall
 	 * @throws UnsupportedOperationException if the provider can not update
 	 */
-	default void uninstall(@NonNull Jdk jdk) {
+	default void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		throw new UnsupportedOperationException(
 				"Uninstalling a JDK is not supported by " + getClass().getName());
 	}

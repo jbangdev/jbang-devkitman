@@ -30,7 +30,7 @@ public class TestJdkManager extends BaseTest {
 	@Test
 	void testHasJdksInstalled() {
 		Arrays.asList(11, 12, 13).forEach(this::createMockJdk);
-		List<Jdk> jdks = jdkManager().listInstalledJdks();
+		List<Jdk.InstalledJdk> jdks = jdkManager().listInstalledJdks();
 		assertThat(jdks, hasSize(4));
 		assertThat(
 				jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()),
@@ -47,7 +47,7 @@ public class TestJdkManager extends BaseTest {
 		Path jdkPath = createMockJdkExt(13);
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
-		List<Jdk> jdks = jdkManager("default", "javahome", "jbang").listInstalledJdks();
+		List<Jdk.InstalledJdk> jdks = jdkManager("default", "javahome", "jbang").listInstalledJdks();
 		assertThat(jdks, hasSize(4));
 		assertThat(
 				jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()),
@@ -56,14 +56,14 @@ public class TestJdkManager extends BaseTest {
 				jdks.stream().map(Jdk::version).collect(Collectors.toList()),
 				containsInAnyOrder("11.0.7", "11.0.7", "12.0.7", "13.0.7"));
 		assertThat(
-				jdks.stream().map(Jdk::isFixedVersion).collect(Collectors.toList()),
+				jdks.stream().map(Jdk.InstalledJdk::isFixedVersion).collect(Collectors.toList()),
 				containsInAnyOrder(false, true, true, false));
 	}
 
 	@Test
 	void testHasJdksInstalledAllProvider() {
 		Arrays.asList(11, 12, 13).forEach(this::createMockJdk);
-		List<Jdk> jdks = jdkManager(JdkProviders.instance().allNames().toArray(new String[] {}))
+		List<Jdk.InstalledJdk> jdks = jdkManager(JdkProviders.instance().allNames().toArray(new String[] {}))
 			.listInstalledJdks();
 		assertThat(jdks, hasSize(greaterThanOrEqualTo(5)));
 	}
@@ -202,7 +202,7 @@ public class TestJdkManager extends BaseTest {
 		environmentVariables.set("JAVA_HOME", jdkPath.toString());
 
 		JdkManager jm = jdkManager("javahome", "jbang");
-		Jdk jdk = jm.getInstalledJdk("12");
+		Jdk.InstalledJdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(JavaHomeJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk12"));
 	}
@@ -216,7 +216,7 @@ public class TestJdkManager extends BaseTest {
 
 		JdkManager jm = jdkManager("default", "javahome", "jbang");
 		jm.setDefaultJdk(jm.getInstalledJdk("12"));
-		Jdk jdk = jm.getInstalledJdk("12");
+		Jdk.InstalledJdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(DefaultJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "default"));
 		assertThat(jdk.home().toRealPath().toString(), endsWith(File.separator + "jdk12"));
@@ -231,7 +231,7 @@ public class TestJdkManager extends BaseTest {
 				"PATH", jdkPath.resolve("bin") + File.pathSeparator + System.getenv("PATH"));
 
 		JdkManager jm = jdkManager("path", "jbang");
-		Jdk jdk = jm.getInstalledJdk("12");
+		Jdk.InstalledJdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(PathJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk12"));
 	}
@@ -240,7 +240,7 @@ public class TestJdkManager extends BaseTest {
 	void testLinkToExistingJdkPath() {
 		Path jdkPath = createMockJdkExt(12);
 		jdkManager().linkToExistingJdk(jdkPath, "12");
-		List<Jdk> jdks = jdkManager().listInstalledJdks();
+		List<Jdk.InstalledJdk> jdks = jdkManager().listInstalledJdks();
 		assertThat(jdks, hasSize(1));
 		assertThat(jdks.get(0).provider(), instanceOf(LinkedJdkProvider.class));
 	}
@@ -346,13 +346,13 @@ public class TestJdkManager extends BaseTest {
 		environmentVariables.set("JAVA_HOME_17_X64", jdkPath2.toString());
 
 		JdkManager jm = jdkManager("multihome");
-		Jdk jdk = jm.getInstalledJdk("12");
+		Jdk.InstalledJdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(MultiHomeJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk12"));
 		jdk = jm.getInstalledJdk("17");
 		assertThat(jdk.provider(), instanceOf(MultiHomeJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk17"));
-		List<Jdk> jdks = jm.listInstalledJdks();
+		List<Jdk.InstalledJdk> jdks = jm.listInstalledJdks();
 		assertThat(jdks, hasSize(2));
 		assertThat(jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()), containsInAnyOrder(12, 17));
 	}
