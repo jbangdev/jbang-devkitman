@@ -118,7 +118,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getInstalledJdk(null), not(nullValue()));
 		Set<String> tags = jm.getInstalledJdk(null).tags();
-		assertThat(tags, contains("Jdk"));
+		assertThat(tags, containsInAnyOrder("Jdk", "Ga"));
 	}
 
 	@Test
@@ -137,7 +137,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getInstalledJdk(null), not(nullValue()));
 		Set<String> tags = jm.getInstalledJdk(null).tags();
-		assertThat(tags, containsInAnyOrder("Jdk", "Graalvm"));
+		assertThat(tags, containsInAnyOrder("Jdk", "Ga", "Graalvm"));
 	}
 
 	@Test
@@ -146,7 +146,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getInstalledJdk(null), not(nullValue()));
 		Set<String> tags = jm.getInstalledJdk(null).tags();
-		assertThat(tags, containsInAnyOrder("Jdk", "Graalvm", "Native"));
+		assertThat(tags, containsInAnyOrder("Jdk", "Ga", "Graalvm", "Native"));
 	}
 
 	@Test
@@ -155,7 +155,7 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getInstalledJdk(null), not(nullValue()));
 		Set<String> tags = jm.getInstalledJdk(null).tags();
-		assertThat(tags, containsInAnyOrder("Jdk", "Javafx"));
+		assertThat(tags, containsInAnyOrder("Jdk", "Ga", "Javafx"));
 	}
 
 	@Test

@@ -200,6 +200,14 @@ public interface Jdk extends Comparable<Jdk> {
 				} else if (JavaUtils.hasJavaCmd(home)) {
 					tags.add(Jdk.Default.Tags.Jre.name());
 				}
+				Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(home);
+				if (version.isPresent()) {
+					if (version.get().matches(".*\\b(ea|EA)\\b.*")) {
+						tags.add(Jdk.Default.Tags.Ea.name());
+					} else {
+						tags.add(Jdk.Default.Tags.Ga.name());
+					}
+				}
 				Optional<String> graalVersion = JavaUtils.readGraalVMVersionStringFromReleaseFile(home);
 				if (graalVersion.isPresent()) {
 					tags.add(Jdk.Default.Tags.Graalvm.name());
@@ -227,8 +235,8 @@ public interface Jdk extends Comparable<Jdk> {
 		@NonNull
 		protected final Set<String> tags;
 
-		enum Tags {
-			Jre, Jdk, Graalvm, Native, Javafx
+		public enum Tags {
+			Jre, Jdk, Graalvm, Native, Javafx, Ea, Ga
 		}
 
 		Default(
