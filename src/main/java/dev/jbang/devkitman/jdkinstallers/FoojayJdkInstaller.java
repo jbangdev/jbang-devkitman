@@ -8,7 +8,6 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,8 +52,9 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	public static class JdkResult {
 		public String java_version;
 		public int major_version;
-		public String release_status;
-		public boolean directly_downloadable;
+		public String release_status; // ga, ea
+		public String package_type; // jdk, jre
+		public boolean javafx_bundled;
 		public JdkResultLinks links;
 	}
 
@@ -119,9 +119,25 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
 		}
-		return Collections.emptyList();
 		return Stream.empty();
 	}
+
+	private @NonNull Set<String> determineTags(JdkResult jdk) {
+		Set<String> tags = new HashSet<>();
+		if (Jdk.Default.Tags.Ga.name().equals(jdk.release_status)) {
+			tags.add(Jdk.Default.Tags.Ga.name());
+		} else if (Jdk.Default.Tags.Ea.name().equals(jdk.release_status)) {
+			tags.add(Jdk.Default.Tags.Ea.name());
+		}
+		if (Jdk.Default.Tags.Jdk.name().equals(jdk.package_type)) {
+			tags.add(Jdk.Default.Tags.Jdk.name());
+		} else if (Jdk.Default.Tags.Jre.name().equals(jdk.package_type)) {
+			tags.add(Jdk.Default.Tags.Jre.name());
+		}
+		if (jdk.javafx_bundled) {
+			tags.add(Jdk.Default.Tags.Javafx.name());
+		}
+		return tags;
 	}
 
 	private VersionsResponse readJsonFromUrl(String url) throws IOException {
@@ -303,8 +319,8 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		public final String downloadUrl;
 
 		AvailableFoojayJdk(@NonNull JdkProvider provider, @NonNull String id, @NonNull String version,
-				@NonNull String downloadUrl) {
-			super(provider, id, version, null);
+				@NonNull String downloadUrl, @NonNull Set<String> tags) {
+			super(provider, id, version, tags);
 			this.downloadUrl = downloadUrl;
 		}
 	}

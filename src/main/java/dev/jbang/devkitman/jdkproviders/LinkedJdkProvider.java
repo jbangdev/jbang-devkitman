@@ -1,5 +1,7 @@
 package dev.jbang.devkitman.jdkproviders;
 
+import static dev.jbang.devkitman.Jdk.InstalledJdk.Default.determineTagsFromJdkHome;
+
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,7 +57,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdkPath);
 				}
-				return new Jdk.AvailableJdk.Default(this, idOrToken, version.get(), null);
+				return new Jdk.AvailableJdk.Default(this, idOrToken, version.get(), determineTagsFromJdkHome(jdkPath));
 			}
 			return null;
 		} else {
