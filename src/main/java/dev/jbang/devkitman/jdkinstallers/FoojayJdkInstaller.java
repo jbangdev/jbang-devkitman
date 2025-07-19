@@ -80,7 +80,18 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	@NonNull
 	@Override
 	public List<Jdk.AvailableJdk> listAvailable() {
-		return list(0, true, majorVersionSort).distinct().collect(Collectors.toList());
+		try {
+			VersionsResponse res = readPackagesForList();
+			return processPackages(res.result, majorVersionSort).distinct().collect(Collectors.toList());
+		} catch (IOException e) {
+			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
+			return Collections.emptyList();
+		}
+	}
+
+	private VersionsResponse readPackagesForList() throws IOException {
+		return readJsonFromUrl(
+				getVersionsUrl(0, true, OsUtils.getOS(), OsUtils.getArch(), distro, "ga,ea"));
 	}
 
 	@Override
@@ -100,26 +111,34 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			// Prefer newer versions
 			return majorVersionSort.compare(j1, j2);
 		};
-		return list(version, openVersion, preferGaSort)
-			.findFirst()
-			.orElse(null);
+		try {
+			VersionsResponse res = readPackagesForVersion(version, openVersion);
+			return processPackages(res.result, preferGaSort)
+				.filter(Jdk.Predicates.forVersion(version, openVersion))
+				.findFirst()
+				.orElse(null);
+		} catch (IOException e) {
+			LOGGER.log(Level.FINE, "Couldn't get available JDK by version", e);
+			return null;
+		}
 	}
 
-	private Stream<Jdk.AvailableJdk> list(Integer minVersion, boolean openVersion, Comparator<JdkResult> sortFunc) {
-		try {
-			VersionsResponse res = readJsonFromUrl(
-					getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distro));
-			return filterEA(res.result)
-				.stream()
-				.filter(jdk -> jdk.major_version == minVersion
-						|| (openVersion && jdk.major_version > minVersion))
-				.sorted(sortFunc)
-				.map(jdk -> new AvailableFoojayJdk(jdkProvider, versionToId.apply(jdk.java_version), jdk.java_version,
-						jdk.links.pkg_download_redirect, determineTags(jdk)));
-		} catch (IOException e) {
-			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
+	private VersionsResponse readPackagesForVersion(Integer minVersion, boolean openVersion) throws IOException {
+		VersionsResponse res = readJsonFromUrl(
+				getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distro, "ga"));
+		if (res.result.isEmpty()) {
+			res = readJsonFromUrl(
+					getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distro, "ea"));
 		}
-		return Stream.empty();
+		return res;
+	}
+
+	private Stream<Jdk.AvailableJdk> processPackages(List<JdkResult> jdks, Comparator<JdkResult> sortFunc) {
+		return filterEA(jdks)
+			.stream()
+			.sorted(sortFunc)
+			.map(jdk -> new AvailableFoojayJdk(jdkProvider, versionToId.apply(jdk.java_version),
+					jdk.java_version, jdk.links.pkg_download_redirect, determineTags(jdk)));
 	}
 
 	private @NonNull Set<String> determineTags(JdkResult jdk) {
@@ -236,12 +255,12 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	private static String getVersionsUrl(int minVersion, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,
-			String distro) {
-		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(minVersion, openVersion, os, arch, distro);
+			String distro, String status) {
+		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(minVersion, openVersion, os, arch, distro, status);
 	}
 
-	private static String getUrlParams(
-			int version, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch, String distro) {
+	private static String getUrlParams(int version, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,
+			String distro, String status) {
 		Map<String, String> params = new HashMap<>();
 		if (version > 0) {
 			String v = String.valueOf(version);
@@ -282,7 +301,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 		params.put("javafx_bundled", "false");
 		params.put("latest", "available");
-		params.put("release_status", "ga,ea");
+		params.put("release_status", status);
 		params.put("directly_downloadable", "true");
 
 		return urlEncodeUTF8(params);
