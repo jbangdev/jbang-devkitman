@@ -13,7 +13,7 @@ First include the library in your project:
 ### JBang
 
 ```
-//DEPS dev.jbang:jdkmanager:0.1.6
+//DEPS dev.jbang:jdkmanager:0.2.0
 ```
 
 ### Maven
@@ -22,20 +22,20 @@ First include the library in your project:
 <dependency>
 	<groupId>dev.jbang</groupId>
 	<artifactId>jdkmanager</artifactId>
-	<version>0.1.6</version>
+	<version>0.2.0</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```groovy
-implementation 'dev.jbang:devkitman:0.1.6'
+implementation 'dev.jbang:devkitman:0.2.0'
 ```
 
 Then the simplest way to get started is:
 
 ```java
-//DEPS dev.jbang:devkitman:0.1.6
+//DEPS dev.jbang:devkitman:0.2.0
 import dev.jbang.devkitman.*;
 
 public class Main {
