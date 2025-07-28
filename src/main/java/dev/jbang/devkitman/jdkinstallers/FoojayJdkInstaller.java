@@ -52,6 +52,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	public static class JdkResult {
 		public String java_version;
 		public int major_version;
+		public String distribution; // temurin, aoj, liberica, zulu, etc.
 		public String release_status; // ga, ea
 		public String package_type; // jdk, jre
 		public boolean javafx_bundled;
@@ -137,20 +138,32 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		return filterEA(jdks)
 			.stream()
 			.sorted(sortFunc)
-			.map(jdk -> new AvailableFoojayJdk(jdkProvider, versionToId.apply(jdk.java_version),
-					jdk.java_version, jdk.links.pkg_download_redirect, determineTags(jdk)));
+			.map(jdk -> new AvailableFoojayJdk(jdkProvider,
+					versionToId.apply(jdk.java_version + "-" + jdk.distribution), jdk.java_version,
+					jdk.links.pkg_download_redirect, determineTags(jdk)));
+	}
+
+	private @NonNull String determineId(@NonNull JdkResult jdk) {
+		String id = jdk.java_version + "-" + jdk.distribution;
+		if (Jdk.Default.Tags.Jre.name().equals(jdk.package_type)) {
+			id += "-jre";
+		}
+		if (jdk.javafx_bundled) {
+			id += "-jfx";
+		}
+		return id;
 	}
 
 	private @NonNull Set<String> determineTags(JdkResult jdk) {
 		Set<String> tags = new HashSet<>();
-		if (Jdk.Default.Tags.Ga.name().equals(jdk.release_status)) {
+		if (Jdk.Default.Tags.Ga.name().equalsIgnoreCase(jdk.release_status)) {
 			tags.add(Jdk.Default.Tags.Ga.name());
-		} else if (Jdk.Default.Tags.Ea.name().equals(jdk.release_status)) {
+		} else if (Jdk.Default.Tags.Ea.name().equalsIgnoreCase(jdk.release_status)) {
 			tags.add(Jdk.Default.Tags.Ea.name());
 		}
-		if (Jdk.Default.Tags.Jdk.name().equals(jdk.package_type)) {
+		if (Jdk.Default.Tags.Jdk.name().equalsIgnoreCase(jdk.package_type)) {
 			tags.add(Jdk.Default.Tags.Jdk.name());
-		} else if (Jdk.Default.Tags.Jre.name().equals(jdk.package_type)) {
+		} else if (Jdk.Default.Tags.Jre.name().equalsIgnoreCase(jdk.package_type)) {
 			tags.add(Jdk.Default.Tags.Jre.name());
 		}
 		if (jdk.javafx_bundled) {
