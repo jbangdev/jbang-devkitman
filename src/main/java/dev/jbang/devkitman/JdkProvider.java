@@ -226,6 +226,7 @@ public interface JdkProvider {
 	class Predicates {
 		public static final Predicate<JdkProvider> all = provider -> true;
 		public static final Predicate<JdkProvider> canUpdate = JdkProvider::canUpdate;
+		public static final Predicate<JdkProvider> canInstall = p -> p.canUpdate() && p.hasFixedVersions();
 
 		public static Predicate<JdkProvider> name(String name) {
 			return provider -> provider.name().equalsIgnoreCase(name);

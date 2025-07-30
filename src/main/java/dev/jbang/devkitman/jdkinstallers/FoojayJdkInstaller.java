@@ -31,7 +31,7 @@ import dev.jbang.devkitman.util.*;
  */
 public class FoojayJdkInstaller implements JdkInstaller {
 	protected final JdkProvider jdkProvider;
-	protected final Function<String, String> versionToId;
+	protected final Function<JdkResult, String> jdkId;
 	protected RemoteAccessProvider remoteAccessProvider = RemoteAccessProvider.createDefaultRemoteAccessProvider();
 	protected String distro = DEFAULT_DISTRO;
 
@@ -63,9 +63,14 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		public List<JdkResult> result;
 	}
 
-	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider, @NonNull Function<String, String> versionToId) {
+	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider) {
 		this.jdkProvider = jdkProvider;
-		this.versionToId = versionToId;
+		this.jdkId = jdk -> jdk.java_version + "-" + jdk.distribution + "-" + jdkProvider.name();
+	}
+
+	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider, @NonNull Function<JdkResult, String> jdkId) {
+		this.jdkProvider = jdkProvider;
+		this.jdkId = jdkId;
 	}
 
 	public @NonNull FoojayJdkInstaller remoteAccessProvider(@NonNull RemoteAccessProvider remoteAccessProvider) {
@@ -139,7 +144,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			.stream()
 			.sorted(sortFunc)
 			.map(jdk -> new AvailableFoojayJdk(jdkProvider,
-					versionToId.apply(jdk.java_version + "-" + jdk.distribution), jdk.java_version,
+					jdkId.apply(jdk), jdk.java_version,
 					jdk.links.pkg_download_redirect, determineTags(jdk)));
 	}
 

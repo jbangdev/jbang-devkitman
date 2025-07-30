@@ -29,7 +29,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 
 	public JBangJdkProvider(Path jdksRoot) {
 		super(jdksRoot);
-		jdkInstaller = new FoojayJdkInstaller(this, this::jdkId);
+		jdkInstaller = new FoojayJdkInstaller(this);
 	}
 
 	@Override
@@ -82,6 +82,18 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 				&& !FileUtils.isLink(jdkFolder);
 	}
 
+	@Override
+	public String jdkId(@NonNull Path jdkFolder) {
+		String name = jdkFolder.getFileName().toString();
+		if (JavaUtils.parseToInt(name, 0) > 0) {
+			// If the folder is named with a number, it means it's probably a
+			// JDK installed by an older JBang version so we append the
+			// provider name to the id to avoid naming conflicts
+			return name + "-" + name();
+		}
+		return super.jdkId(jdkFolder);
+	}
+
 	public static Path getJBangJdkDir() {
 		Path dir;
 		String v = System.getenv("JBANG_CACHE_DIR_JDKS");
@@ -128,7 +140,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 		public JdkProvider create(Config config) {
 			JBangJdkProvider prov = new JBangJdkProvider(config.installPath);
 			return prov
-				.installer(new FoojayJdkInstaller(prov, prov::jdkId)
+				.installer(new FoojayJdkInstaller(prov)
 					.distro(config.properties.getOrDefault("distro", null)));
 			// TODO make RAP configurable
 			// .remoteAccessProvider(RemoteAccessProvider.createDefaultRemoteAccessProvider(config.cachePath));

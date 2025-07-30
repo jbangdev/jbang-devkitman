@@ -408,7 +408,7 @@ public class JdkManager {
 	}
 
 	private Jdk.@Nullable AvailableJdk getAvailableJdkByVersion(int version, boolean openVersion) {
-		return providers(JdkProvider.Predicates.canUpdate)
+		return providers(JdkProvider.Predicates.canInstall)
 			.map(p -> p.getAvailableByVersion(version, openVersion))
 			.filter(Objects::nonNull)
 			.findFirst()
@@ -416,7 +416,7 @@ public class JdkManager {
 	}
 
 	private Jdk.@Nullable AvailableJdk getAvailableJdkById(String id) {
-		return providers(JdkProvider.Predicates.canUpdate)
+		return providers(JdkProvider.Predicates.canInstall)
 			.map(p -> p.getAvailableByIdOrToken(id))
 			.filter(Objects::nonNull)
 			.findFirst()
@@ -426,20 +426,20 @@ public class JdkManager {
 	Jdk.@NonNull InstalledJdk installJdk(Jdk.@NonNull AvailableJdk jdk) {
 		Jdk.InstalledJdk newJdk = jdk.provider().install(jdk);
 
-		if (hasDefaultProvider()) {
+		if (hasDefaultProvider() && !newJdk.provider().equals(defaultProvider)) {
 			// Check if we have a global default Jdk set, if not set the new JDK as default
 			Jdk.InstalledJdk defJdk = getDefaultJdk();
 			if (defJdk == null) {
-				Jdk.AvailableJdk newDefJdk = jdk.provider().getAvailableByIdOrToken("default");
+				Jdk.AvailableJdk newDefJdk = defaultProvider.getAvailableByIdOrToken("default@" + newJdk.home());
 				assert newDefJdk != null : "Internal error, global default JDK should always be available";
 				newDefJdk.install();
 			}
 			// Check if we have a versioned default Jdk set, if not set the new JDK as
-			// default
+			// the default for the installed JDK's major version
 			int v = newJdk.majorVersion();
 			Jdk.InstalledJdk defJdkVer = getDefaultJdkForVersion(v);
 			if (defJdkVer == null) {
-				Jdk.AvailableJdk newDefJdk = jdk.provider().getAvailableByIdOrToken(v + "-default");
+				Jdk.AvailableJdk newDefJdk = defaultProvider.getAvailableByIdOrToken(v + "-default@" + newJdk.home());
 				assert newDefJdk != null : "Internal error, versioned default JDK should always be available";
 				newDefJdk.install();
 			}
@@ -449,28 +449,30 @@ public class JdkManager {
 	}
 
 	void uninstallJdk(Jdk.@NonNull InstalledJdk jdk) {
-		// Check if the JDK is the global default JDK, if so we need to reset it
 		boolean resetDefault = false;
-		Jdk.InstalledJdk defaultJdk = getDefaultJdk();
-		if (defaultJdk != null) {
-			Path defHome = defaultJdk.home();
-			try {
-				resetDefault = Files.isSameFile(defHome, jdk.home());
-			} catch (IOException ex) {
-				LOGGER.log(Level.WARNING, "Error while trying to reset global default JDK", ex);
-				resetDefault = defHome.equals(jdk.home());
-			}
-		}
-		// Check if the JDK is the global default JDK, if so we need to reset it
 		boolean resetDefaultVer = false;
-		Jdk.InstalledJdk defaultJdkVer = getDefaultJdk();
-		if (defaultJdkVer != null) {
-			Path defHome = defaultJdkVer.home();
-			try {
-				resetDefaultVer = Files.isSameFile(defHome, jdk.home());
-			} catch (IOException ex) {
-				LOGGER.log(Level.WARNING, "Error while trying to reset versioned default JDK", ex);
-				resetDefaultVer = defHome.equals(jdk.home());
+		if (hasDefaultProvider() && !jdk.provider().equals(defaultProvider)) {
+			// Check if the JDK is the global default JDK, if so we need to reset it
+			Jdk.InstalledJdk defaultJdk = getDefaultJdk();
+			if (defaultJdk != null) {
+				Path defHome = defaultJdk.home();
+				try {
+					resetDefault = Files.isSameFile(defHome, jdk.home());
+				} catch (IOException ex) {
+					LOGGER.log(Level.WARNING, "Error while trying to reset global default JDK", ex);
+					resetDefault = defHome.equals(jdk.home());
+				}
+			}
+			// Check if the JDK is the global default JDK, if so we need to reset it
+			Jdk.InstalledJdk defaultJdkVer = getDefaultJdk();
+			if (defaultJdkVer != null) {
+				Path defHome = defaultJdkVer.home();
+				try {
+					resetDefaultVer = Files.isSameFile(defHome, jdk.home());
+				} catch (IOException ex) {
+					LOGGER.log(Level.WARNING, "Error while trying to reset versioned default JDK", ex);
+					resetDefaultVer = defHome.equals(jdk.home());
+				}
 			}
 		}
 
@@ -478,10 +480,10 @@ public class JdkManager {
 
 		if (resetDefault) {
 			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(Jdk.Predicates.minVersion(jdk.majorVersion()),
-					JdkProvider.Predicates.canUpdate);
+					JdkProvider.Predicates.canInstall);
 			if (!newjdk.isPresent()) {
 				newjdk = prevInstalledJdk(Jdk.Predicates.maxVersion(jdk.majorVersion()),
-						JdkProvider.Predicates.canUpdate);
+						JdkProvider.Predicates.canInstall);
 			}
 			if (newjdk.isPresent()) {
 				setDefaultJdk(newjdk.get());
@@ -493,9 +495,9 @@ public class JdkManager {
 		if (resetDefaultVer) {
 			int v = jdk.majorVersion();
 			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(Jdk.Predicates.exactVersion(v),
-					JdkProvider.Predicates.canUpdate);
+					JdkProvider.Predicates.canInstall);
 			if (!newjdk.isPresent()) {
-				newjdk = prevInstalledJdk(Jdk.Predicates.exactVersion(v), JdkProvider.Predicates.canUpdate);
+				newjdk = prevInstalledJdk(Jdk.Predicates.exactVersion(v), JdkProvider.Predicates.canInstall);
 			}
 			if (newjdk.isPresent()) {
 				setDefaultJdkForVersion(newjdk.get());
@@ -579,7 +581,7 @@ public class JdkManager {
 	}
 
 	public List<Jdk.AvailableJdk> listAvailableJdks() {
-		return providers(JdkProvider.Predicates.canUpdate)
+		return providers(JdkProvider.Predicates.canInstall)
 			.flatMap(p -> p.listAvailable().stream())
 			.sorted(Comparator.comparingInt(Jdk::majorVersion).reversed())
 			.collect(Collectors.toList());

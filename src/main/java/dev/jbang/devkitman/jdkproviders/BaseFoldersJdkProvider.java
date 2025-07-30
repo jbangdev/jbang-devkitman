@@ -65,16 +65,14 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	@NonNull
 	@Override
 	public List<Jdk.InstalledJdk> listInstalled() {
-		if (Files.isDirectory(jdksRoot)) {
-			try (Stream<Path> jdkPaths = listJdkPaths()) {
-				return jdkPaths.map(this::createJdk)
-					.filter(Objects::nonNull)
-					.collect(Collectors.toList());
-			} catch (IOException e) {
-				LOGGER.log(Level.FINE, "Couldn't list installed JDKs", e);
-			}
+		try (Stream<Path> jdkPaths = listJdkPaths()) {
+			return jdkPaths.map(this::createJdk)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
+		} catch (IOException e) {
+			LOGGER.log(Level.FINE, "Couldn't list installed JDKs", e);
+			return Collections.emptyList();
 		}
-		return Collections.emptyList();
 	}
 
 	@Override
@@ -87,7 +85,7 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 
 	@Override
 	public Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
-		if (jdkPath.startsWith(jdksRoot) && Files.isDirectory(jdkPath) && acceptFolder(jdkPath)) {
+		if (acceptFolder(jdkPath)) {
 			return createJdk(jdkPath);
 		}
 		return null;
@@ -119,6 +117,7 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 		};
 	}
 
+	@NonNull
 	protected Stream<Path> listJdkPaths() throws IOException {
 		if (Files.isDirectory(jdksRoot)) {
 			return Files.list(jdksRoot).filter(this::acceptFolder);
@@ -127,15 +126,15 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	protected Jdk.@Nullable InstalledJdk createJdk(Path home) {
-		String name = home.getFileName().toString();
 		if (acceptFolder(home)) {
-			return createJdk(jdkId(name), home, null, null);
+			return createJdk(jdkId(home), home, null, null);
 		}
 		return null;
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return isValidId(jdkFolder.getFileName().toString()) && JavaUtils.hasJavacCmd(jdkFolder);
+		return jdkFolder.startsWith(jdksRoot) && isValidId(jdkFolder.getFileName().toString())
+				&& JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	private final Pattern validId = Pattern.compile("^[a-zA-Z0-9._+-]+$");
@@ -145,10 +144,15 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 		return id.endsWith("-" + name()) && validId.matcher(id).matches();
 	}
 
-	public String jdkId(String name) {
-		if (!validId.matcher(name).matches()) {
-			throw new IllegalArgumentException("Invalid JDK id: " + name);
-		}
-		return name + "-" + name();
+	/**
+	 * Returns a JDK id for the given JDK folder. By default, the id is a
+	 * combination of the folder name and the provider name. This should only be
+	 * called with paths that have passed the {@link #acceptFolder(Path)} check.
+	 *
+	 * @param jdkFolder The folder of the JDK
+	 * @return A valid JDK id
+	 */
+	public String jdkId(@NonNull Path jdkFolder) {
+		return jdkFolder.getFileName().toString();
 	}
 }

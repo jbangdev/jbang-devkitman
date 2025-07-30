@@ -59,8 +59,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return super.acceptFolder(jdkFolder)
-				&& FileUtils.isLink(jdkFolder);
+		return super.acceptFolder(jdkFolder) && FileUtils.isLink(jdkFolder);
 	}
 
 	@Override
@@ -71,7 +70,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		}
 		AvailableLinkedJdk availJdk = (AvailableLinkedJdk) jdk;
 		// If there's an existing installed Jdk with the same id, uninstall it
-		Jdk.InstalledJdk existingJdk = getInstalledById(jdkId(availJdk.id()));
+		Jdk.InstalledJdk existingJdk = getInstalledById(availJdk.id());
 		if (existingJdk != null && !FileUtils.isSameFile(availJdk.home, existingJdk.home())) {
 			LOGGER.log(
 					Level.FINE,
@@ -97,7 +96,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	public boolean canUse() {
+	public boolean canUpdate() {
 		return true;
 	}
 

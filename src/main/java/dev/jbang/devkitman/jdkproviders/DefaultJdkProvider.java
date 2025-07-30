@@ -2,13 +2,13 @@ package dev.jbang.devkitman.jdkproviders;
 
 import static dev.jbang.devkitman.Jdk.InstalledJdk.Default.determineTagsFromJdkHome;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -77,24 +77,21 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 		}
 	}
 
-	@NonNull
-	@Override
-	public List<Jdk.InstalledJdk> listInstalled() {
-		if (Files.isDirectory(defaultJdkLink)) {
-			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, defaultJdkLink, null, null);
-			if (jdk != null) {
-				return Collections.singletonList(jdk);
-			}
-		}
-		return Collections.emptyList();
-	}
-
 	@Override
 	public Jdk.@Nullable InstalledJdk getInstalledByVersion(int version, boolean openVersion) {
+		// First we check if the "default" link exists and has the correct version
+		if (acceptFolder(defaultJdkLink)) {
+			Optional<String> v = JavaUtils.resolveJavaVersionStringFromPath(defaultJdkLink);
+			if (v.isPresent() && JavaUtils.parseJavaVersion(v.get()) == version) {
+				return createJdk(defaultJdkLink);
+			}
+		}
+		// Then we check if there's a link with the exact number matching the version
 		Path jdk = jdksRoot.resolve(Integer.toString(version));
 		if (Files.isDirectory(jdk)) {
 			return createJdk(jdk);
 		} else {
+			// Finally we fall back to the default implementation
 			return super.getInstalledByVersion(version, true);
 		}
 	}
@@ -128,6 +125,22 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
+	public boolean canUpdate() {
+		return true;
+	}
+
+	@Override
+	@NonNull
+	protected Stream<Path> listJdkPaths() throws IOException {
+		if (acceptFolder(defaultJdkLink)) {
+			return Stream.concat(Stream.of(defaultJdkLink),
+					super.listJdkPaths().filter(p -> !p.equals(defaultJdkLink)));
+		} else {
+			return super.listJdkPaths();
+		}
+	}
+
+	@Override
 	@NonNull
 	protected Path getJdkPath(@NonNull String id) {
 		if (name().equals(id)) {
@@ -136,6 +149,18 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 			String name = id.substring(0, id.length() - name().length() - 1);
 			return jdksRoot.resolve(name);
 		}
+	}
+
+	protected boolean acceptFolder(@NonNull Path jdkFolder) {
+		if (!jdkFolder.equals(defaultJdkLink) && !jdkFolder.startsWith(jdksRoot)) {
+			return false;
+		}
+		String nm = jdkFolder.getFileName().toString();
+		// Check the folder is either the default link or it's name is a number
+		if (!jdkFolder.equals(defaultJdkLink) && JavaUtils.parseToInt(nm, 0) == 0) {
+			return false;
+		}
+		return FileUtils.isLink(jdkFolder) && JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	@Override
@@ -147,6 +172,18 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 			return JavaUtils.parseToInt(version, 0) > 0;
 		}
 		return false;
+	}
+
+	@Override
+	public String jdkId(@NonNull Path jdkFolder) {
+		if (jdkFolder.equals(defaultJdkLink)) {
+			return "default";
+		} else {
+			// For backward compatibility, the default folders are named with a number
+			// (e.g. "11", "17", etc.) but for the id we need to add the provider name
+			String name = jdkFolder.getFileName().toString();
+			return name + "-" + name();
+		}
 	}
 
 	@Override

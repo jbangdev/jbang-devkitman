@@ -20,6 +20,7 @@ import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.jdkproviders.MockJdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
+import dev.jbang.devkitman.util.JavaUtils;
 import dev.jbang.devkitman.util.RemoteAccessProvider;
 
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -110,7 +111,7 @@ public class BaseTest {
 	}
 
 	protected Path createMockJdk(String jdkVersion) {
-		Path jdkPath = config.installPath.resolve(jdkVersion + "-jbang");
+		Path jdkPath = config.installPath.resolve(jdkVersion + "-distro-jbang");
 		return createMockJdk(jdkPath, jdkVersion, this::initMockJdkDir);
 	}
 
@@ -124,7 +125,7 @@ public class BaseTest {
 	}
 
 	protected Path createMockJdk(int jdkVersion, BiConsumer<Path, String> init) {
-		Path jdkPath = config.installPath.resolve(jdkVersion + ".0.7-jbang");
+		Path jdkPath = config.installPath.resolve(jdkVersion + ".0.7-distro-jbang");
 		return createMockJdk(jdkPath, jdkVersion + ".0.7", init);
 	}
 
@@ -134,7 +135,8 @@ public class BaseTest {
 		if (!Files.exists(link)) {
 			FileUtils.createLink(link, jdkPath);
 		}
-		Path vlink = config.installPath.resolve(jdkVersion + "-default");
+		int v = JavaUtils.parseJavaVersion(jdkVersion);
+		Path vlink = config.installPath.resolve(String.valueOf(v));
 		if (!Files.exists(vlink)) {
 			FileUtils.createLink(vlink, jdkPath);
 		}
@@ -221,7 +223,7 @@ public class BaseTest {
 		};
 
 		JBangJdkProvider jbang = new JBangJdkProvider(config.installPath);
-		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang, jbang::jdkId)
+		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang)
 			.distro("jbang")
 			.remoteAccessProvider(rap);
 		installer.remoteAccessProvider(rap);
