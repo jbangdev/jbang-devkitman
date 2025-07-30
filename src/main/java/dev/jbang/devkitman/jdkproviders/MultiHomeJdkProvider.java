@@ -2,9 +2,8 @@ package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 
@@ -33,7 +32,7 @@ public class MultiHomeJdkProvider extends BaseJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk.InstalledJdk> listInstalled() {
+	public Stream<Jdk.InstalledJdk> listInstalled() {
 		return System.getenv()
 			.entrySet()
 			.stream()
@@ -41,8 +40,7 @@ public class MultiHomeJdkProvider extends BaseJdkProvider {
 			.map(entry -> Paths.get(entry.getValue()))
 			.filter(Files::isDirectory)
 			.map(jdkHome -> createJdk(Discovery.PROVIDER_ID, jdkHome, null, null))
-			.filter(Objects::nonNull)
-			.collect(Collectors.toList());
+			.filter(Objects::nonNull);
 	}
 
 	@Override

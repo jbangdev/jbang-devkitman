@@ -3,6 +3,7 @@ package dev.jbang.devkitman.jdkproviders;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -44,7 +45,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk.AvailableJdk> listAvailable() {
+	public Stream<Jdk.AvailableJdk> listAvailable() {
 		return jdkInstaller.listAvailable();
 	}
 

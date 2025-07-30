@@ -1,8 +1,7 @@
 package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 
@@ -30,7 +29,7 @@ public class PathJdkProvider extends BaseJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk.InstalledJdk> listInstalled() {
+	public Stream<Jdk.InstalledJdk> listInstalled() {
 		Path jdkHome = null;
 		Path javac = OsUtils.searchPath("javac");
 		if (javac != null) {
@@ -40,10 +39,10 @@ public class PathJdkProvider extends BaseJdkProvider {
 		if (jdkHome != null) {
 			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome, null, null);
 			if (jdk != null) {
-				return Collections.singletonList(jdk);
+				return Stream.of(jdk);
 			}
 		}
-		return Collections.emptyList();
+		return Stream.empty();
 	}
 
 	@Override

@@ -582,7 +582,7 @@ public class JdkManager {
 
 	public List<Jdk.AvailableJdk> listAvailableJdks() {
 		return providers(JdkProvider.Predicates.canInstall)
-			.flatMap(p -> p.listAvailable().stream())
+			.flatMap(JdkProvider::listAvailable)
 			.sorted(Comparator.comparingInt(Jdk::majorVersion).reversed())
 			.collect(Collectors.toList());
 	}
@@ -592,7 +592,7 @@ public class JdkManager {
 	}
 
 	private Stream<Jdk.InstalledJdk> listInstalledJdks(Predicate<JdkProvider> providerFilter) {
-		return providers(providerFilter).flatMap(p -> p.listInstalled().stream());
+		return providers(providerFilter).flatMap(JdkProvider::listInstalled);
 	}
 
 	public boolean hasDefaultProvider() {

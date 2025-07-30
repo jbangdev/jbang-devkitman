@@ -3,14 +3,11 @@ package dev.jbang.devkitman.jdkproviders;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
@@ -64,14 +61,14 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk.InstalledJdk> listInstalled() {
-		try (Stream<Path> jdkPaths = listJdkPaths()) {
-			return jdkPaths.map(this::createJdk)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
+	public Stream<Jdk.InstalledJdk> listInstalled() {
+		try {
+			return listJdkPaths()
+				.map(this::createJdk)
+				.filter(Objects::nonNull);
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list installed JDKs", e);
-			return Collections.emptyList();
+			return Stream.empty();
 		}
 	}
 

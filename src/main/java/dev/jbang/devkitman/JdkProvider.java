@@ -3,6 +3,7 @@ package dev.jbang.devkitman;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -60,7 +61,7 @@ public interface JdkProvider {
 	 * @return List of <code>Jdk</code> objects, possibly empty
 	 */
 	@NonNull
-	List<Jdk.InstalledJdk> listInstalled();
+	Stream<Jdk.InstalledJdk> listInstalled();
 
 	/**
 	 * Determines if a JDK of the requested version is currently installed by this
@@ -74,10 +75,12 @@ public interface JdkProvider {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable InstalledJdk getInstalledByVersion(int version, boolean openVersion) {
-		return listInstalled().stream()
-			.filter(Jdk.Predicates.forVersion(version, openVersion))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			return installed
+				.filter(Jdk.Predicates.forVersion(version, openVersion))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**
@@ -90,10 +93,12 @@ public interface JdkProvider {
 	 */
 	default Jdk.@Nullable InstalledJdk getInstalledById(@NonNull String id) {
 		if (isValidId(id)) {
-			return listInstalled().stream()
-				.filter(Jdk.Predicates.id(id))
-				.findFirst()
-				.orElse(null);
+			try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+				return installed
+					.filter(Jdk.Predicates.id(id))
+					.findFirst()
+					.orElse(null);
+			}
 		}
 		return null;
 	}
@@ -107,10 +112,12 @@ public interface JdkProvider {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
-		return listInstalled().stream()
-			.filter(Jdk.Predicates.path(jdkPath))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			return installed
+				.filter(Jdk.Predicates.path(jdkPath))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**
@@ -166,16 +173,18 @@ public interface JdkProvider {
 	 * @return List of <code>Jdk</code> objects
 	 */
 	@NonNull
-	default List<Jdk.AvailableJdk> listAvailable() {
+	default Stream<Jdk.AvailableJdk> listAvailable() {
 		throw new UnsupportedOperationException(
 				"Listing available JDKs is not supported by " + getClass().getName());
 	}
 
 	default Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
-		return listAvailable().stream()
-			.filter(Jdk.Predicates.forVersion(version, openVersion))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.AvailableJdk> available = listAvailable()) {
+			return available
+				.filter(Jdk.Predicates.forVersion(version, openVersion))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**
@@ -192,10 +201,12 @@ public interface JdkProvider {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
-		return listAvailable().stream()
-			.filter(Jdk.Predicates.id(idOrToken))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.AvailableJdk> available = listAvailable()) {
+			return available
+				.filter(Jdk.Predicates.id(idOrToken))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**

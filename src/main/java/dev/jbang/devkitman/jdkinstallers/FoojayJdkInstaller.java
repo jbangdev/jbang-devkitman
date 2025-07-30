@@ -85,13 +85,13 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	@NonNull
 	@Override
-	public List<Jdk.AvailableJdk> listAvailable() {
+	public Stream<Jdk.AvailableJdk> listAvailable() {
 		try {
 			VersionsResponse res = readPackagesForList();
-			return processPackages(res.result, majorVersionSort).distinct().collect(Collectors.toList());
+			return processPackages(res.result, majorVersionSort).distinct();
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
-			return Collections.emptyList();
+			return Stream.empty();
 		}
 	}
 

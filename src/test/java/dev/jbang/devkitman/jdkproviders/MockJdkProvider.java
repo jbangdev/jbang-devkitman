@@ -2,10 +2,9 @@ package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 
@@ -28,10 +27,9 @@ public class MockJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk.AvailableJdk> listAvailable() {
+	public @NonNull Stream<Jdk.AvailableJdk> listAvailable() {
 		return Arrays.stream(versions)
-			.map(v -> new Jdk.AvailableJdk.Default(this, v + "-dummy", v, null))
-			.collect(Collectors.toList());
+			.map(v -> new Jdk.AvailableJdk.Default(this, v + "-dummy", v, null));
 	}
 
 	@Override
