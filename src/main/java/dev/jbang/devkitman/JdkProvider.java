@@ -3,6 +3,7 @@ package dev.jbang.devkitman;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -23,10 +24,10 @@ import dev.jbang.devkitman.util.JavaUtils;
 public interface JdkProvider {
 
 	default Jdk.@Nullable InstalledJdk createJdk(@NonNull String id, @Nullable Path home, @Nullable String version,
-			boolean fixedVersion, @Nullable Set<String> tags) {
+			@Nullable Set<String> tags) {
 		Optional<String> v = version != null ? Optional.of(version) : JavaUtils.resolveJavaVersionStringFromPath(home);
 		if (v.isPresent()) {
-			return new Jdk.InstalledJdk.Default(this, id, home, v.get(), fixedVersion, tags);
+			return new Jdk.InstalledJdk.Default(this, id, home, v.get(), tags);
 		} else {
 			return null;
 		}
@@ -60,7 +61,7 @@ public interface JdkProvider {
 	 * @return List of <code>Jdk</code> objects, possibly empty
 	 */
 	@NonNull
-	List<Jdk.InstalledJdk> listInstalled();
+	Stream<Jdk.InstalledJdk> listInstalled();
 
 	/**
 	 * Determines if a JDK of the requested version is currently installed by this
@@ -74,10 +75,12 @@ public interface JdkProvider {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable InstalledJdk getInstalledByVersion(int version, boolean openVersion) {
-		return listInstalled().stream()
-			.filter(Jdk.Predicates.forVersion(version, openVersion))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			return installed
+				.filter(Jdk.Predicates.forVersion(version, openVersion))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**
@@ -90,10 +93,12 @@ public interface JdkProvider {
 	 */
 	default Jdk.@Nullable InstalledJdk getInstalledById(@NonNull String id) {
 		if (isValidId(id)) {
-			return listInstalled().stream()
-				.filter(Jdk.Predicates.id(id))
-				.findFirst()
-				.orElse(null);
+			try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+				return installed
+					.filter(Jdk.Predicates.id(id))
+					.findFirst()
+					.orElse(null);
+			}
 		}
 		return null;
 	}
@@ -107,10 +112,12 @@ public interface JdkProvider {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
-		return listInstalled().stream()
-			.filter(Jdk.Predicates.path(jdkPath))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			return installed
+				.filter(Jdk.Predicates.path(jdkPath))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**
@@ -145,6 +152,18 @@ public interface JdkProvider {
 	}
 
 	/**
+	 * Determines if the JDK versions are fixed or that they can change. For
+	 * example, providers like "default" and "linked" can have JDKs with the same id
+	 * that refer to different versions over time, while other providers will always
+	 * return the same JDK for a given id.
+	 *
+	 * @return True if the provider has fixed versions, false otherwise
+	 */
+	default boolean hasFixedVersions() {
+		return true;
+	}
+
+	/**
 	 * This method returns a set of JDKs that are available for installation.
 	 * Implementations might set the <code>home</code> field of the JDK objects if
 	 * the respective JDK is currently installed on the user's system, but only if
@@ -154,16 +173,18 @@ public interface JdkProvider {
 	 * @return List of <code>Jdk</code> objects
 	 */
 	@NonNull
-	default List<Jdk.AvailableJdk> listAvailable() {
+	default Stream<Jdk.AvailableJdk> listAvailable() {
 		throw new UnsupportedOperationException(
 				"Listing available JDKs is not supported by " + getClass().getName());
 	}
 
 	default Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
-		return listAvailable().stream()
-			.filter(Jdk.Predicates.forVersion(version, openVersion))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.AvailableJdk> available = listAvailable()) {
+			return available
+				.filter(Jdk.Predicates.forVersion(version, openVersion))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**
@@ -180,14 +201,17 @@ public interface JdkProvider {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
-		return listAvailable().stream()
-			.filter(Jdk.Predicates.id(idOrToken))
-			.findFirst()
-			.orElse(null);
+		try (Stream<Jdk.AvailableJdk> available = listAvailable()) {
+			return available
+				.filter(Jdk.Predicates.id(idOrToken))
+				.findFirst()
+				.orElse(null);
+		}
 	}
 
 	/**
-	 * Installs the indicated JDK
+	 * Installs the indicated JDK. NB: Never call this method directly, always use
+	 * <code>Jdk.install(jdk)</code> instead.
 	 *
 	 * @param jdk The <code>Jdk</code> object of the JDK to install
 	 * @return A <code>Jdk</code> object
@@ -199,22 +223,21 @@ public interface JdkProvider {
 	}
 
 	/**
-	 * Uninstalls the indicated JDK
+	 * Uninstalls the indicated JDK. NB: Never call this method directly, always use
+	 * <code>Jdk.uninstall(jdk)</code> instead.
 	 *
 	 * @param jdk The <code>Jdk</code> object of the JDK to uninstall
 	 * @throws UnsupportedOperationException if the provider can not update
 	 */
 	default void uninstall(Jdk.@NonNull InstalledJdk jdk) {
-		if (!canUpdate()) {
-			throw new UnsupportedOperationException(
-					"Uninstalling a JDK is not supported by " + getClass().getName());
-		}
-		manager().uninstallJdk(jdk);
+		throw new UnsupportedOperationException(
+				"Uninstalling JDKs is not supported by " + getClass().getName());
 	}
 
 	class Predicates {
 		public static final Predicate<JdkProvider> all = provider -> true;
 		public static final Predicate<JdkProvider> canUpdate = JdkProvider::canUpdate;
+		public static final Predicate<JdkProvider> canInstall = p -> p.canUpdate() && p.hasFixedVersions();
 
 		public static Predicate<JdkProvider> name(String name) {
 			return provider -> provider.name().equalsIgnoreCase(name);
