@@ -580,6 +580,13 @@ public class JdkManager {
 			.max(Jdk::compareTo);
 	}
 
+	/**
+	 * Returns a list of all JDKs that are available for installation. This includes
+	 * JDKs from all active JDK providers.
+	 *
+	 * @return A list of <code>Jdk.AvailableJdk</code> objects, possibly empty
+	 */
+	@NonNull
 	public List<Jdk.AvailableJdk> listAvailableJdks() {
 		return providers(JdkProvider.Predicates.canInstall)
 			.flatMap(JdkProvider::listAvailable)
@@ -587,6 +594,13 @@ public class JdkManager {
 			.collect(Collectors.toList());
 	}
 
+	/**
+	 * Returns a list of all JDKs that are currently installed. This includes JDKs
+	 * from all active JDK providers.
+	 *
+	 * @return A list of <code>Jdk.InstalledJdk</code> objects, possibly empty
+	 */
+	@NonNull
 	public List<Jdk.InstalledJdk> listInstalledJdks() {
 		return listInstalledJdks(JdkProvider.Predicates.all).collect(Collectors.toList());
 	}
@@ -595,22 +609,65 @@ public class JdkManager {
 		return providers(providerFilter).flatMap(JdkProvider::listInstalled);
 	}
 
+	/**
+	 * Returns the default provider that is used to manage the default JDK and
+	 * versioned defaults.
+	 *
+	 * @return boolean indicating if a default provider is available
+	 */
 	public boolean hasDefaultProvider() {
 		return defaultProvider != null;
 	}
 
+	/**
+	 * Returns a list of all JDKs that are managed by the default provider.
+	 *
+	 * @return A list of <code>Jdk.InstalledJdk</code> objects, possibly empty
+	 */
+	@NonNull
+	public List<Jdk.InstalledJdk> listDefaultJdks() {
+		if (hasDefaultProvider()) {
+			return defaultProvider.listInstalled().collect(Collectors.toList());
+		} else {
+			return Collections.emptyList();
+		}
+	}
+
+	/**
+	 * Returns the default JDK, if one is set. This is the JDK that will be used by
+	 * default when no specific JDK is requested.
+	 *
+	 * @return The default JDK or <code>null</code> if no default is set
+	 */
 	public Jdk.@Nullable InstalledJdk getDefaultJdk() {
 		return hasDefaultProvider()
 				? defaultProvider.getInstalledById("default")
 				: null;
 	}
 
+	/**
+	 * Returns the default JDK for a specific major version, if one is set. This is
+	 * the JDK that will be used by default when a specific major version is
+	 * requested, e.g. "21" for JDK 21.
+	 *
+	 * @param majorVersion The major version of the JDK to return
+	 * @return The default JDK for the given version or <code>null</code> if no
+	 *         default is set
+	 */
 	public Jdk.@Nullable InstalledJdk getDefaultJdkForVersion(int majorVersion) {
 		return hasDefaultProvider()
 				? defaultProvider.getInstalledById(majorVersion + "-default")
 				: null;
 	}
 
+	/**
+	 * Sets the default JDK to the given JDK. This is the JDK that will be used by
+	 * default when no specific JDK is requested.
+	 *
+	 * @param jdk The JDK to set as the default
+	 * @throws IllegalArgumentException If the JDK is not installed or if it cannot
+	 *                                  be determined
+	 */
 	public void setDefaultJdk(Jdk.@NonNull InstalledJdk jdk) {
 		if (hasDefaultProvider()) {
 			Jdk.InstalledJdk defJdk = getDefaultJdk();
@@ -628,6 +685,15 @@ public class JdkManager {
 		}
 	}
 
+	/**
+	 * Sets the default JDK for a specific major version. This is the JDK that will
+	 * be used by default when a specific major version is requested, e.g. "21" for
+	 * JDK 21.
+	 *
+	 * @param jdk The JDK to set as the default for the given major version
+	 * @throws IllegalArgumentException If the JDK is not installed or if it cannot
+	 *                                  be determined
+	 */
 	public void setDefaultJdkForVersion(Jdk.@NonNull InstalledJdk jdk) {
 		if (hasDefaultProvider()) {
 			Jdk.InstalledJdk defJdk = getDefaultJdkForVersion(jdk.majorVersion());
@@ -647,6 +713,11 @@ public class JdkManager {
 		}
 	}
 
+	/**
+	 * Unsets the default JDK, if one is set. This will not uninstall the JDK, but
+	 * it will make the selection of a JDK more ambiguous, as JBang will no longer
+	 * know which JDK to use when the user does not specify a version or id.
+	 */
 	public void removeDefaultJdk() {
 		Jdk.InstalledJdk defJdk = getDefaultJdk();
 		if (defJdk != null) {
@@ -654,6 +725,14 @@ public class JdkManager {
 		}
 	}
 
+	/**
+	 * Unsets the default JDK for a specific major version, if one is set. This will
+	 * not uninstall the JDK, but it will make the selection of a versioned JDK more
+	 * ambiguous, as JBang will no longer know which JDK to use when the user does
+	 * not specify an id.
+	 *
+	 * @param majorVersion The major version of the JDK to remove as default
+	 */
 	public void removeDefaultJdkForVersion(int majorVersion) {
 		Jdk.InstalledJdk defJdk = getDefaultJdkForVersion(majorVersion);
 		if (defJdk != null) {
