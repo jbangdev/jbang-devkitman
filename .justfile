@@ -4,6 +4,10 @@ current_version := "0.2.0"
 default:
     @ just -l
 
+# clean build artifacts
+clean:
+    ./gradlew clean
+
 # build without tests
 build:
     ./gradlew spotlessApply build -x test

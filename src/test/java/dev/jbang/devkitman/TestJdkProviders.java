@@ -109,10 +109,9 @@ public class TestJdkProviders extends BaseTest {
 							name,
 							(prov, config) -> {
 								assertThat(prov, equalTo("jbang"));
-								assertThat(config.properties, hasEntry("aap", "noot"));
-								assertThat(config.properties, hasEntry("mies", "wim"));
-								return new JBangJdkProvider(
-										config.installPath);
+								assertThat(config.properties(), hasEntry("aap", "noot"));
+								assertThat(config.properties(), hasEntry("mies", "wim"));
+								return new JBangJdkProvider(config.installPath());
 							}),
 				is(instanceOf(JBangJdkProvider.class)));
 	}

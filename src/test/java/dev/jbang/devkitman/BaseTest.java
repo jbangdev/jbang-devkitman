@@ -93,7 +93,7 @@ public class BaseTest {
 
 	protected JdkManager mockJdkManager(Function<Integer, Path> mockJdk, int... versions) {
 		return JdkManager.builder()
-			.providers(new MockJdkProvider(config.installPath, mockJdk, versions))
+			.providers(new MockJdkProvider(config.installPath(), mockJdk, versions))
 			.build();
 	}
 
@@ -106,9 +106,9 @@ public class BaseTest {
 	}
 
 	protected Path createMockJdk(int jdkVersion, BiConsumer<Path, String> init) {
-		Path jdkPath = config.installPath.resolve(String.valueOf(jdkVersion));
+		Path jdkPath = config.installPath().resolve(String.valueOf(jdkVersion));
 		init.accept(jdkPath, jdkVersion + ".0.7");
-		Path link = config.installPath.resolve("default");
+		Path link = config.installPath().resolve("default");
 		if (!Files.exists(link)) {
 			FileUtils.createLink(link, jdkPath);
 		}
@@ -116,7 +116,7 @@ public class BaseTest {
 	}
 
 	protected Path createMockJdkExt(int jdkVersion) {
-		Path jdkPath = config.cachePath.resolve("jdk" + jdkVersion);
+		Path jdkPath = config.cachePath().resolve("jdk" + jdkVersion);
 		FileUtils.mkdirs(jdkPath);
 		initMockJdkDir(jdkPath, jdkVersion + ".0.7");
 		return jdkPath;
@@ -194,7 +194,7 @@ public class BaseTest {
 			}
 		};
 
-		JBangJdkProvider jbang = new JBangJdkProvider(config.installPath);
+		JBangJdkProvider jbang = new JBangJdkProvider(config.installPath());
 		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang, jbang::jdkId);
 		installer.remoteAccessProvider(rap);
 		jbang.installer(installer);
