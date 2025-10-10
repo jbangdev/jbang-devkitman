@@ -100,7 +100,7 @@ public class JdkProviders {
 		for (int i = 1; i < parts.length; i++) {
 			String[] keyValue = parts[i].split("=");
 			if (keyValue.length == 2) {
-				providerConfig.properties.put(keyValue[0], keyValue[1]);
+				providerConfig.properties().put(keyValue[0], keyValue[1]);
 			}
 		}
 		return action.apply(name, providerConfig);

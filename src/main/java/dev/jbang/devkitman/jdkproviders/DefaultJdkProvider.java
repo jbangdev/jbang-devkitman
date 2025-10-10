@@ -106,8 +106,9 @@ public class DefaultJdkProvider extends BaseJdkProvider {
 
 		@Override
 		public JdkProvider create(Config config) {
-			String defaultLink = config.properties.computeIfAbsent("link",
-					k -> config.installPath.resolve(PROVIDER_ID).toString());
+			String defaultLink = config.properties()
+				.computeIfAbsent("link",
+						k -> config.installPath().resolve(PROVIDER_ID).toString());
 			return new DefaultJdkProvider(Paths.get(defaultLink));
 		}
 	}

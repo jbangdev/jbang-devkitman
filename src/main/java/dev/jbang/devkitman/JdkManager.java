@@ -37,7 +37,7 @@ public class JdkManager {
 	public static JdkManager create() {
 		Path installPath = JBangJdkProvider.getJBangJdkDir();
 		JdkDiscovery.Config cfg = new JdkDiscovery.Config(installPath);
-		cfg.properties.put("link", JBangJdkProvider.getJBangConfigDir().resolve("currentjdk").toString());
+		cfg.properties().put("link", JBangJdkProvider.getJBangConfigDir().resolve("currentjdk").toString());
 		return builder().providers(JdkProviders.instance().all(cfg)).build();
 	}
 

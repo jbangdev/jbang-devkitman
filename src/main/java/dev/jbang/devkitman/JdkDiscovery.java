@@ -26,11 +26,10 @@ public interface JdkDiscovery {
 
 	class Config {
 		@NonNull
-		public final Path installPath;
+		private final Path installPath;
+		private Path cachePath;
 		@NonNull
-		public final Path cachePath;
-		@NonNull
-		public final Map<String, String> properties;
+		private final Map<String, String> properties;
 
 		public Config(@NonNull Path installPaths) {
 			this(installPaths, null, null);
@@ -41,19 +40,32 @@ public interface JdkDiscovery {
 				@Nullable Path cachePath,
 				@Nullable Map<String, String> properties) {
 			this.installPath = installPath;
-			if (cachePath == null) {
-				try {
-					this.cachePath = deleteOnExit(Files.createTempDirectory("jdk-provider-cache"));
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			} else {
-				this.cachePath = cachePath;
-			}
+			this.cachePath = cachePath;
 			this.properties = new HashMap<>();
 			if (properties != null) {
 				this.properties.putAll(properties);
 			}
+		}
+
+		public @NonNull Path installPath() {
+			return installPath;
+		}
+
+		public @NonNull Path cachePath() {
+			if (cachePath == null) {
+				// If no cache path is set, we create a temp dir as a curtesy that will be
+				// deleted on exit
+				try {
+					cachePath = deleteOnExit(Files.createTempDirectory("jdk-provider-cache"));
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+			return cachePath;
+		}
+
+		public @NonNull Map<String, String> properties() {
+			return properties;
 		}
 
 		public Config copy() {
