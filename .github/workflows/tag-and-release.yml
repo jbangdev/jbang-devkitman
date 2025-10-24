@@ -30,7 +30,7 @@ jobs:
         run: ./gradlew --no-daemon --build-cache --scan -s clean publish jreleaserRelease
       - name: release-output
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: upload-release-output
           path: |
