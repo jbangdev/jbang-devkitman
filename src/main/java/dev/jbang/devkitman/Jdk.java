@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import dev.jbang.devkitman.jdkproviders.ExternalJdkProvider;
 import dev.jbang.devkitman.util.JavaUtils;
 
 public interface Jdk extends Comparable<Jdk> {
@@ -78,11 +79,7 @@ public interface Jdk extends Comparable<Jdk> {
 			@Override
 			@NonNull
 			public InstalledJdk install() {
-				if (!provider.canUpdate()) {
-					throw new UnsupportedOperationException(
-							"Installing a JDK is not supported by " + provider);
-				}
-				return provider.install(this);
+				return provider.manager().installJdk(this);
 			}
 
 			@Override
@@ -101,11 +98,6 @@ public interface Jdk extends Comparable<Jdk> {
 		@NonNull
 		Path home();
 
-		/**
-		 * Determines if the JDK version is fixed or that it can change
-		 */
-		boolean isFixedVersion();
-
 		@Override
 		default boolean isInstalled() {
 			return true;
@@ -117,7 +109,6 @@ public interface Jdk extends Comparable<Jdk> {
 		void uninstall();
 
 		class Default extends Jdk.Default implements InstalledJdk {
-			private final boolean fixedVersion;
 			@Nullable
 			private final Path home;
 
@@ -130,16 +121,9 @@ public interface Jdk extends Comparable<Jdk> {
 					@NonNull String id,
 					@Nullable Path home,
 					@NonNull String version,
-					boolean fixedVersion,
 					@Nullable Set<String> tags) {
 				super(provider, id, version, tags != null ? tags : determineTagsFromJdkHome(home));
-				this.fixedVersion = fixedVersion;
 				this.home = home;
-			}
-
-			@Override
-			public boolean isFixedVersion() {
-				return fixedVersion;
 			}
 
 			@Override
@@ -154,7 +138,7 @@ public interface Jdk extends Comparable<Jdk> {
 
 			@Override
 			public void uninstall() {
-				provider.uninstall(this);
+				provider.manager().uninstallJdk(this);
 			}
 
 			@Override
@@ -184,7 +168,8 @@ public interface Jdk extends Comparable<Jdk> {
 
 			@Override
 			public String toString() {
-				return majorVersion() + " (" + version + (isFixedVersion() ? " [fixed]" : " [dynamic]") + ", " + id
+				return majorVersion() + " (" + version + (provider.hasFixedVersions() ? " [fixed]" : " [dynamic]")
+						+ ", " + id
 						+ ", "
 						+ home + ", " + tags + "))";
 			}
@@ -220,6 +205,59 @@ public interface Jdk extends Comparable<Jdk> {
 					tags.add(Jdk.Default.Tags.Javafx.name());
 				}
 				return tags;
+			}
+		}
+
+	}
+
+	interface LinkedJdk extends InstalledJdk {
+
+		@NonNull
+		InstalledJdk linked();
+
+		class Default extends InstalledJdk.Default implements LinkedJdk {
+
+			public Default(
+					@NonNull JdkProvider provider,
+					@NonNull String id,
+					@Nullable Path home,
+					@NonNull String version,
+					@Nullable Set<String> tags) {
+				super(provider, id, home, version, tags);
+			}
+
+			@Override
+			@NonNull
+			public InstalledJdk linked() {
+				Path jdkHome;
+				try {
+					jdkHome = home().toRealPath();
+				} catch (Exception e) {
+					jdkHome = home().toAbsolutePath();
+				}
+				// First look for a Jdk in updatable non-linking providers
+				InstalledJdk linkedJdk = getLinkedJdk(jdkHome, p -> p.canUpdate() && !p.hasLinkedVersions());
+				if (linkedJdk == null) {
+					// Then check the non-updatable non-linking providers
+					linkedJdk = getLinkedJdk(jdkHome, p -> !p.canUpdate() && !p.hasLinkedVersions());
+				}
+				if (linkedJdk == null) {
+					// Finally fall back to the "external" provider
+					linkedJdk = (new ExternalJdkProvider()).getInstalledByPath(jdkHome);
+					assert linkedJdk != null;
+				}
+				return linkedJdk;
+			}
+
+			private InstalledJdk getLinkedJdk(Path jdkHome, Predicate<JdkProvider> providerFilter) {
+				return provider().manager()
+					.providers()
+					.stream()
+					.filter(providerFilter)
+					.map(p -> p.getInstalledByPath(jdkHome))
+					.filter(Objects::nonNull)
+					.findFirst()
+					.orElse(null);
 			}
 		}
 
@@ -310,6 +348,14 @@ public interface Jdk extends Comparable<Jdk> {
 			return jdk -> jdk.majorVersion() >= version;
 		}
 
+		public static <T extends Jdk> Predicate<T> minVersion(int version) {
+			return jdk -> jdk.majorVersion() >= version;
+		}
+
+		public static <T extends Jdk> Predicate<T> maxVersion(int version) {
+			return jdk -> jdk.majorVersion() <= version;
+		}
+
 		public static <T extends Jdk> Predicate<T> forVersion(String version) {
 			int v = JavaUtils.parseJavaVersion(version);
 			return forVersion(v, JavaUtils.isOpenVersion(version));
@@ -328,7 +374,7 @@ public interface Jdk extends Comparable<Jdk> {
 		}
 
 		public static <T extends InstalledJdk> Predicate<T> fixedVersion() {
-			return InstalledJdk::isFixedVersion;
+			return jdk -> jdk.provider().hasFixedVersions();
 		}
 
 		public static <T extends InstalledJdk> Predicate<T> path(Path jdkPath) {

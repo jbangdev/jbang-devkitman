@@ -122,6 +122,14 @@ public class FileUtils {
 		return path;
 	}
 
+	public static boolean isSameFile(Path f1, Path f2) {
+		try {
+			return Files.isSameFile(f1, f2);
+		} catch (IOException e) {
+			return f1.toAbsolutePath().equals(f2.toAbsolutePath());
+		}
+	}
+
 	// Returns true if a path is a (sym)link to an entry in the same folder
 	public static boolean isSameFolderLink(Path jdkFolder) {
 		Path absFolder = jdkFolder.toAbsolutePath();
@@ -135,4 +143,14 @@ public class FileUtils {
 		}
 		return false;
 	}
+
+	public static boolean isValidPath(String path) {
+		try {
+			Paths.get(path);
+			return true;
+		} catch (InvalidPathException e) {
+			return false;
+		}
+	}
+
 }

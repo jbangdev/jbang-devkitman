@@ -1,7 +1,7 @@
 package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 
@@ -37,7 +37,7 @@ public class JdkProviderWrapper implements JdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk.InstalledJdk> listInstalled() {
+	public @NonNull Stream<Jdk.InstalledJdk> listInstalled() {
 		return provider.listInstalled();
 	}
 
@@ -52,7 +52,7 @@ public class JdkProviderWrapper implements JdkProvider {
 	}
 
 	@Override
-	public @NonNull List<Jdk.AvailableJdk> listAvailable() {
+	public @NonNull Stream<Jdk.AvailableJdk> listAvailable() {
 		return provider.listAvailable();
 	}
 
