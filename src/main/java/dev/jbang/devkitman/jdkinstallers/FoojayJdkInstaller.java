@@ -31,17 +31,13 @@ import dev.jbang.devkitman.util.*;
  */
 public class FoojayJdkInstaller implements JdkInstaller {
 	protected final JdkProvider jdkProvider;
-	protected final Function<String, String> versionToId;
+	protected final Function<JdkResult, String> jdkId;
 	protected RemoteAccessProvider remoteAccessProvider = RemoteAccessProvider.createDefaultRemoteAccessProvider();
 	protected String distro = DEFAULT_DISTRO;
 
 	public static final String FOOJAY_JDK_VERSIONS_URL = "https://api.foojay.io/disco/v3.0/packages?";
 
 	public static final String DEFAULT_DISTRO = "temurin,aoj";
-
-	private static final Comparator<JdkResult> majorVersionSort = Comparator
-		.comparingInt((JdkResult jdk) -> jdk.major_version)
-		.reversed();
 
 	private static final Logger LOGGER = Logger.getLogger(FoojayJdkInstaller.class.getName());
 
@@ -52,6 +48,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	public static class JdkResult {
 		public String java_version;
 		public int major_version;
+		public String distribution; // temurin, aoj, liberica, zulu, etc.
 		public String release_status; // ga, ea
 		public String package_type; // jdk, jre
 		public boolean javafx_bundled;
@@ -62,9 +59,14 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		public List<JdkResult> result;
 	}
 
-	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider, @NonNull Function<String, String> versionToId) {
+	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider) {
 		this.jdkProvider = jdkProvider;
-		this.versionToId = versionToId;
+		this.jdkId = jdk -> determineId(jdk) + "-" + jdkProvider.name();
+	}
+
+	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider, @NonNull Function<JdkResult, String> jdkId) {
+		this.jdkProvider = jdkProvider;
+		this.jdkId = jdkId;
 	}
 
 	public @NonNull FoojayJdkInstaller remoteAccessProvider(@NonNull RemoteAccessProvider remoteAccessProvider) {
@@ -79,13 +81,13 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	@NonNull
 	@Override
-	public List<Jdk.AvailableJdk> listAvailable() {
+	public Stream<Jdk.AvailableJdk> listAvailable() {
 		try {
 			VersionsResponse res = readPackagesForList();
-			return processPackages(res.result, majorVersionSort).distinct().collect(Collectors.toList());
+			return processPackages(res.result, majorVersionSort()).distinct();
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
-			return Collections.emptyList();
+			return Stream.empty();
 		}
 	}
 
@@ -109,7 +111,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 				return j2.release_status.compareTo(j1.release_status);
 			}
 			// Prefer newer versions
-			return majorVersionSort.compare(j1, j2);
+			return majorVersionSort().compare(j1, j2);
 		};
 		try {
 			VersionsResponse res = readPackagesForVersion(version, openVersion);
@@ -137,20 +139,32 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		return filterEA(jdks)
 			.stream()
 			.sorted(sortFunc)
-			.map(jdk -> new AvailableFoojayJdk(jdkProvider, versionToId.apply(jdk.java_version),
-					jdk.java_version, jdk.links.pkg_download_redirect, determineTags(jdk)));
+			.map(jdk -> new AvailableFoojayJdk(jdkProvider,
+					jdkId.apply(jdk), jdk.java_version,
+					jdk.links.pkg_download_redirect, determineTags(jdk)));
+	}
+
+	private @NonNull String determineId(@NonNull JdkResult jdk) {
+		String id = jdk.java_version + "-" + jdk.distribution;
+		if (Jdk.Default.Tags.Jre.name().equals(jdk.package_type)) {
+			id += "-jre";
+		}
+		if (jdk.javafx_bundled) {
+			id += "-jfx";
+		}
+		return id;
 	}
 
 	private @NonNull Set<String> determineTags(JdkResult jdk) {
 		Set<String> tags = new HashSet<>();
-		if (Jdk.Default.Tags.Ga.name().equals(jdk.release_status)) {
+		if (Jdk.Default.Tags.Ga.name().equalsIgnoreCase(jdk.release_status)) {
 			tags.add(Jdk.Default.Tags.Ga.name());
-		} else if (Jdk.Default.Tags.Ea.name().equals(jdk.release_status)) {
+		} else if (Jdk.Default.Tags.Ea.name().equalsIgnoreCase(jdk.release_status)) {
 			tags.add(Jdk.Default.Tags.Ea.name());
 		}
-		if (Jdk.Default.Tags.Jdk.name().equals(jdk.package_type)) {
+		if (Jdk.Default.Tags.Jdk.name().equalsIgnoreCase(jdk.package_type)) {
 			tags.add(Jdk.Default.Tags.Jdk.name());
-		} else if (Jdk.Default.Tags.Jre.name().equals(jdk.package_type)) {
+		} else if (Jdk.Default.Tags.Jre.name().equalsIgnoreCase(jdk.package_type)) {
 			tags.add(Jdk.Default.Tags.Jre.name());
 		}
 		if (jdk.javafx_bundled) {
@@ -195,8 +209,20 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			.collect(Collectors.toList());
 	}
 
+	private static final Comparator<JdkResult> jdkResultVersionComparator = (o1, o2) -> VersionComparator.INSTANCE
+		.compare(o1.java_version, o2.java_version);
+
+	private Comparator<JdkResult> majorVersionSort() {
+		List<String> ds = Arrays.asList(distro.split(","));
+		Comparator<JdkResult> jdkResultDistroComparator = Comparator.comparingInt(o -> ds.indexOf(o.distribution));
+		return Comparator
+			.comparingInt((JdkResult jdk) -> -jdk.major_version)
+			.thenComparing(jdkResultDistroComparator)
+			.thenComparing(jdkResultVersionComparator.reversed());
+	}
+
 	@Override
-	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk, Path jdkDir) {
+	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk, @NonNull Path jdkDir) {
 		if (!(jdk instanceof AvailableFoojayJdk)) {
 			throw new IllegalArgumentException(
 					"FoojayJdkInstaller can only install JDKs listed as available by itself");
@@ -226,7 +252,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			}
 			Files.move(jdkTmpDir, jdkDir);
 			FileUtils.deletePath(jdkOldDir);
-			Jdk.InstalledJdk newJdk = jdkProvider.createJdk(foojayJdk.id(), jdkDir, null, true, null);
+			Jdk.InstalledJdk newJdk = jdkProvider.createJdk(foojayJdk.id(), jdkDir);
 			if (newJdk == null) {
 				throw new IllegalStateException("Cannot obtain version of recently installed JDK");
 			}
@@ -249,9 +275,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	@Override
 	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
-		if (jdk.isInstalled()) {
-			FileUtils.deletePath(jdk.home());
-		}
+		JavaUtils.safeDeleteJdk(jdk.home());
 	}
 
 	private static String getVersionsUrl(int minVersion, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,

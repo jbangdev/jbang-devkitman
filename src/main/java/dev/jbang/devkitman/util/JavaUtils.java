@@ -156,4 +156,23 @@ public class JavaUtils {
 		}
 		return jdkHome;
 	}
+
+	static public void safeDeleteJdk(@NonNull Path jdkHome) {
+		if (OsUtils.isWindows()) {
+			// On Windows we have to check nobody is currently using the JDK or we could
+			// be causing all kinds of trouble
+			try {
+				Path jdkTmpDir = jdkHome
+					.getParent()
+					.resolve("_delete_me_" + jdkHome.getFileName().toString());
+				Files.move(jdkHome, jdkTmpDir);
+				FileUtils.deletePath(jdkTmpDir);
+			} catch (IOException ex) {
+				LOGGER.log(Level.WARNING, "Cannot uninstall JDK, it's being used: {0}", jdkHome);
+				return;
+			}
+		} else {
+			FileUtils.deletePath(jdkHome);
+		}
+	}
 }

@@ -10,7 +10,7 @@ clean:
 
 # build without tests
 build:
-    ./gradlew spotlessApply build -x test
+    ./gradlew spotlessApply build publishToMavenLocal -x test
 
 # run tests
 test:

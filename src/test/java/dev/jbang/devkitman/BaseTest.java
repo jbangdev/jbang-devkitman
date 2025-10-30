@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -19,6 +20,7 @@ import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.jdkproviders.MockJdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
+import dev.jbang.devkitman.util.JavaUtils;
 import dev.jbang.devkitman.util.RemoteAccessProvider;
 
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -88,10 +90,17 @@ public class BaseTest {
 	}
 
 	protected JdkManager mockJdkManager(int... versions) {
+		String[] vs = Arrays.stream(versions)
+			.mapToObj(v -> v + ".0.7")
+			.toArray(String[]::new);
+		return mockJdkManager(vs);
+	}
+
+	protected JdkManager mockJdkManager(String... versions) {
 		return mockJdkManager(this::createMockJdk, versions);
 	}
 
-	protected JdkManager mockJdkManager(Function<Integer, Path> mockJdk, int... versions) {
+	protected JdkManager mockJdkManager(Function<String, Path> mockJdk, String... versions) {
 		return JdkManager.builder()
 			.providers(new MockJdkProvider(config.installPath(), mockJdk, versions))
 			.build();
@@ -101,16 +110,35 @@ public class BaseTest {
 		return createMockJdk(jdkVersion, this::initMockJdkDir);
 	}
 
+	protected Path createMockJdk(String jdkVersion) {
+		Path jdkPath = config.installPath().resolve(jdkVersion + "-distro-jbang");
+		return createMockJdk(jdkPath, jdkVersion, this::initMockJdkDir);
+	}
+
+	protected Path createMockJdk(String jdkId, String jdkVersion) {
+		Path jdkPath = config.installPath().resolve(jdkId);
+		return createMockJdk(jdkPath, jdkVersion, this::initMockJdkDir);
+	}
+
 	protected Path createMockJdkRuntime(int jdkVersion) {
 		return createMockJdk(jdkVersion, this::initMockJdkDirRuntime);
 	}
 
 	protected Path createMockJdk(int jdkVersion, BiConsumer<Path, String> init) {
-		Path jdkPath = config.installPath().resolve(String.valueOf(jdkVersion));
-		init.accept(jdkPath, jdkVersion + ".0.7");
+		Path jdkPath = config.installPath().resolve(jdkVersion + ".0.7-distro-jbang");
+		return createMockJdk(jdkPath, jdkVersion + ".0.7", init);
+	}
+
+	protected Path createMockJdk(Path jdkPath, String jdkVersion, BiConsumer<Path, String> init) {
+		init.accept(jdkPath, jdkVersion);
 		Path link = config.installPath().resolve("default");
 		if (!Files.exists(link)) {
 			FileUtils.createLink(link, jdkPath);
+		}
+		int v = JavaUtils.parseJavaVersion(jdkVersion);
+		Path vlink = config.installPath().resolve(String.valueOf(v));
+		if (!Files.exists(vlink)) {
+			FileUtils.createLink(vlink, jdkPath);
 		}
 		return jdkPath;
 	}
@@ -195,7 +223,9 @@ public class BaseTest {
 		};
 
 		JBangJdkProvider jbang = new JBangJdkProvider(config.installPath());
-		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang, jbang::jdkId);
+		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang)
+			.distro("jbang")
+			.remoteAccessProvider(rap);
 		installer.remoteAccessProvider(rap);
 		jbang.installer(installer);
 		return jbang;
