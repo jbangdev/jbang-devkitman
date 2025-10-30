@@ -601,7 +601,11 @@ public class JdkManager {
 	}
 
 	public boolean isCurrentJdkManaged() {
-		Path currentJdk = Paths.get(System.getProperty("java.home"));
+		String jh = System.getProperty("java.home");
+		if (jh == null) {
+			return false;
+		}
+		Path currentJdk = Paths.get(jh);
 		return providers(JdkProvider.Predicates.canUpdate)
 			.anyMatch(p -> p.getInstalledByPath(currentJdk) != null);
 	}
