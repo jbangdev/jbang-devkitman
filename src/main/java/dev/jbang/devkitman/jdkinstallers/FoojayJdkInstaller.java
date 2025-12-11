@@ -295,6 +295,8 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			params.put("libc_type", "c_std_lib");
 		} else if (os == OsUtils.OS.mac) {
 			params.put("libc_type", "libc");
+		} else if (os == OsUtils.OS.alpine_linux) {
+			params.put("libc_type", "musl");
 		} else {
 			params.put("libc_type", "glibc");
 		}
