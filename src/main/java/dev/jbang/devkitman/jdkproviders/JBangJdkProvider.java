@@ -1,9 +1,9 @@
 package dev.jbang.devkitman.jdkproviders;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -30,7 +30,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 
 	public JBangJdkProvider(Path jdksRoot) {
 		super(jdksRoot);
-		jdkInstaller = new FoojayJdkInstaller(this, this::jdkId);
+		jdkInstaller = new FoojayJdkInstaller(this);
 	}
 
 	@Override
@@ -45,7 +45,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 
 	@NonNull
 	@Override
-	public List<Jdk.AvailableJdk> listAvailable() {
+	public Stream<Jdk.AvailableJdk> listAvailable() {
 		return jdkInstaller.listAvailable();
 	}
 
@@ -66,24 +66,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 
 	@Override
 	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
-		super.uninstall(jdk);
 		jdkInstaller.uninstall(jdk);
-	}
-
-//	@Override
-//	public Jdk.InstalledJdk supplyJdk(@NonNull String id, @Nullable Path home, @Nullable String version) {
-//		return super.createJdk(id, home, version, true, null);
-//	}
-
-	@Override
-	public Jdk.@Nullable InstalledJdk getInstalledByVersion(int version, boolean openVersion) {
-		Path jdk = jdksRoot.resolve(Integer.toString(version));
-		if (Files.isDirectory(jdk)) {
-			return createJdk(jdk);
-		} else if (openVersion) {
-			return super.getInstalledByVersion(version, openVersion);
-		}
-		return null;
 	}
 
 	@Override
@@ -91,38 +74,25 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 		return true;
 	}
 
-	@NonNull
-	public Path getJdksPath() {
-		return jdksRoot;
-	}
-
-	@NonNull
-	@Override
-	public String jdkId(String name) {
-		int majorVersion = JavaUtils.parseJavaVersion(name);
-		return super.jdkId(Integer.toString(majorVersion));
-	}
-
-	@Override
-	public boolean isValidId(@NonNull String id) {
-		return JavaUtils.parseToInt(id, 0) > 0;
-	}
-
-	@NonNull
-	@Override
-	protected Path getJdkPath(@NonNull String jdk) {
-		return getJdksPath().resolve(Integer.toString(jdkVersion(jdk)));
-	}
-
-	private static int jdkVersion(String jdk) {
-		return JavaUtils.parseJavaVersion(jdk);
-	}
-
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return isValidId(jdkFolder.getFileName().toString())
-				&& super.acceptFolder(jdkFolder)
+		// We additionally allow folders that are named with a number
+		// (e.g. "11", "17", etc.) for backwards compatibility with older
+		// JBang versions
+		return (super.acceptFolder(jdkFolder) || JavaUtils.parseToInt(jdkFolder.getFileName().toString(), 0) > 0)
 				&& !FileUtils.isLink(jdkFolder);
+	}
+
+	@Override
+	public String jdkId(@NonNull Path jdkFolder) {
+		String name = jdkFolder.getFileName().toString();
+		if (JavaUtils.parseToInt(name, 0) > 0) {
+			// If the folder is named with a number, it means it's probably a
+			// JDK installed by an older JBang version so we append the
+			// provider name to the id to avoid naming conflicts
+			return name + "-" + name();
+		}
+		return super.jdkId(jdkFolder);
 	}
 
 	public static Path getJBangJdkDir() {
@@ -171,7 +141,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 		public JdkProvider create(Config config) {
 			JBangJdkProvider prov = new JBangJdkProvider(config.installPath());
 			return prov
-				.installer(new FoojayJdkInstaller(prov, prov::jdkId)
+				.installer(new FoojayJdkInstaller(prov)
 					.distro(config.properties().getOrDefault("distro", null)));
 			// TODO make RAP configurable
 			// .remoteAccessProvider(RemoteAccessProvider.createDefaultRemoteAccessProvider(config.cachePath));

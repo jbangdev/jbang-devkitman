@@ -41,7 +41,7 @@ public class ScoopJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
-	protected Jdk.@Nullable InstalledJdk createJdk(Path home) {
+	protected Jdk.@Nullable InstalledJdk createJdk(@NonNull Path home) {
 		try {
 			// Try to resolve any links
 			home = home.toRealPath();

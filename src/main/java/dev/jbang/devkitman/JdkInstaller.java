@@ -1,7 +1,7 @@
 package dev.jbang.devkitman;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -23,7 +23,7 @@ public interface JdkInstaller {
 	 * @return List of <code>Jdk</code> objects
 	 */
 	@NonNull
-	default List<Jdk.AvailableJdk> listAvailable() {
+	default Stream<Jdk.AvailableJdk> listAvailable() {
 		throw new UnsupportedOperationException(
 				"Listing available JDKs is not supported by " + getClass().getName());
 	}
@@ -38,7 +38,7 @@ public interface JdkInstaller {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
-		return listAvailable().stream()
+		return listAvailable()
 			.filter(Jdk.Predicates.forVersion(version, openVersion))
 			.findFirst()
 			.orElse(null);
@@ -58,7 +58,7 @@ public interface JdkInstaller {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
-		return listAvailable().stream()
+		return listAvailable()
 			.filter(Jdk.Predicates.id(idOrToken))
 			.findFirst()
 			.orElse(null);

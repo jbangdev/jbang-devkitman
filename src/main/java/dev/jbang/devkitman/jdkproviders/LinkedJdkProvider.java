@@ -2,11 +2,10 @@ package dev.jbang.devkitman.jdkproviders;
 
 import static dev.jbang.devkitman.Jdk.InstalledJdk.Default.determineTagsFromJdkHome;
 
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,24 +31,22 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		super(jdksRoot);
 	}
 
-	protected Jdk.@Nullable InstalledJdk createJdk(Path home) {
-		return createJdk(home, false);
+	@Override
+	public Jdk.@Nullable LinkedJdk createJdk(@NonNull String id, @Nullable Path home, @NonNull String version,
+			@Nullable Set<String> tags) {
+		return new Jdk.LinkedJdk.Default(this, id, home, version, tags);
 	}
 
 	@Override
 	public @NonNull String description() {
-		return "Any unmanaged JDKs that the user has linked to.";
-	}
-
-	@Override
-	public boolean canUse() {
-		return true;
+		return "Any unmanaged JDKs that have been linked to.";
 	}
 
 	@Override
 	public Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
+		// Check if the token follows our special format
 		String[] parts = idOrToken.split("@", 2);
-		if (parts.length == 2 && isValidId(parts[0]) && isValidPath(parts[1])) {
+		if (parts.length == 2 && isValidId(parts[0]) && FileUtils.isValidPath(parts[1])) {
 			Path jdkPath = Paths.get(parts[1]);
 			if (JavaUtils.hasJavacCmd(jdkPath)) {
 				Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(jdkPath);
@@ -57,7 +54,8 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdkPath);
 				}
-				return new Jdk.AvailableJdk.Default(this, idOrToken, version.get(), determineTagsFromJdkHome(jdkPath));
+				return new AvailableLinkedJdk(this, parts[0], version.get(), jdkPath,
+						determineTagsFromJdkHome(jdkPath));
 			}
 			return null;
 		} else {
@@ -65,74 +63,67 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		}
 	}
 
-	private static boolean isValidPath(String path) {
-		try {
-			Paths.get(path);
-			return true;
-		} catch (InvalidPathException e) {
-			return false;
-		}
-	}
-
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return isValidId(jdkFolder.getFileName().toString())
-				&& super.acceptFolder(jdkFolder)
-				&& FileUtils.isLink(jdkFolder);
+		return super.acceptFolder(jdkFolder) && FileUtils.isLink(jdkFolder);
 	}
 
 	@Override
-	public Jdk.@NonNull InstalledJdk install(Jdk.@NonNull AvailableJdk jdk) {
-		// Check this Jdk's id follows our special format
-		String[] parts = jdk.id().split("@", 2);
-		if (parts.length != 2 || !isValidPath(parts[1])) {
-			throw new IllegalStateException("Invalid linked Jdk id: " + jdk.id());
+	public Jdk.@NonNull LinkedJdk install(Jdk.@NonNull AvailableJdk jdk) {
+		if (!(jdk instanceof AvailableLinkedJdk)) {
+			throw new IllegalArgumentException(
+					"LinkedJdkInstaller can only install JDKs listed as available by itself");
 		}
-		String id = parts[0];
-		Path jdkPath = Paths.get(parts[1]);
+		AvailableLinkedJdk availJdk = (AvailableLinkedJdk) jdk;
 		// If there's an existing installed Jdk with the same id, uninstall it
-		Jdk.InstalledJdk existingJdk = getInstalledById(jdkId(id));
-		if (existingJdk != null && existingJdk.isInstalled() && !jdk.equals(existingJdk)) {
+		Jdk.InstalledJdk existingJdk = getInstalledById(availJdk.id());
+		if (existingJdk != null && !FileUtils.isSameFile(availJdk.home, existingJdk.home())) {
 			LOGGER.log(
 					Level.FINE,
 					"A managed JDK already exists, it must be deleted to make sure linking works");
 			uninstall(existingJdk);
 		}
-		Path linkPath = getJdkPath(id);
+		Path linkPath = getJdkPath(availJdk.id());
 		// Remove anything that might be in the way
 		FileUtils.deletePath(linkPath);
 		// Now create the new link
-		FileUtils.createLink(linkPath, jdkPath);
-		Jdk.InstalledJdk newJdk = Objects.requireNonNull(createJdk(linkPath));
-		LOGGER.log(Level.INFO, "JDK {0} has been linked to: {1}", new Object[] { id, jdkPath });
+		FileUtils.createLink(linkPath, availJdk.home);
+		Jdk.LinkedJdk newJdk = (Jdk.LinkedJdk) createJdk(linkPath);
+		if (newJdk == null) {
+			throw new IllegalStateException("Failed to find JDK in: " + availJdk.home);
+		}
+		LOGGER.log(Level.INFO, "JDK {0} has been linked to: {1}", new Object[] { availJdk.id(), availJdk.home });
 		return newJdk;
 	}
 
 	@Override
 	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
-		if (jdk.isInstalled()) {
-			FileUtils.deletePath(jdk.home());
-			LOGGER.log(Level.INFO, "JDK {0} has been uninstalled", new Object[] { jdk.id() });
+		JavaUtils.safeDeleteJdk(jdk.home());
+	}
+
+	@Override
+	public boolean canUpdate() {
+		return true;
+	}
+
+	@Override
+	public boolean hasFixedVersions() {
+		return false;
+	}
+
+	@Override
+	public boolean hasLinkedVersions() {
+		return true;
+	}
+
+	static class AvailableLinkedJdk extends Jdk.AvailableJdk.Default {
+		public final Path home;
+
+		AvailableLinkedJdk(@NonNull JdkProvider provider, @NonNull String id, @NonNull String version,
+				@NonNull Path home, @NonNull Set<String> tags) {
+			super(provider, id, version, tags);
+			this.home = home;
 		}
-	}
-
-	// TODO remove these 3 methods when switching to the new folder structure
-	@NonNull
-	@Override
-	public String jdkId(String name) {
-		int majorVersion = JavaUtils.parseJavaVersion(name);
-		return Integer.toString(majorVersion);
-	}
-
-	@Override
-	public boolean isValidId(@NonNull String id) {
-		return JavaUtils.parseToInt(id, 0) > 0;
-	}
-
-	@NonNull
-	@Override
-	protected Path getJdkPath(@NonNull String jdk) {
-		return jdksRoot.resolve(Integer.toString(JavaUtils.parseToInt(jdk, 0)));
 	}
 
 	public static class Discovery implements JdkDiscovery {
