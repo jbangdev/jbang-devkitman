@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import dev.jbang.devkitman.jdkproviders.DefaultJdkProvider;
 import dev.jbang.devkitman.jdkproviders.JavaHomeJdkProvider;
@@ -226,6 +228,19 @@ public class TestJdkManager extends BaseTest {
 		Jdk.InstalledJdk jdk = jm.getInstalledJdk("12");
 		assertThat(jdk.provider(), instanceOf(JavaHomeJdkProvider.class));
 		assertThat(jdk.home().toString(), endsWith(File.separator + "jdk12"));
+	}
+
+	@Test
+	@EnabledOnOs(OS.WINDOWS)
+	void testJavaHomeLegacyDosPath() throws IOException {
+		Path jdkPath = config.cachePath().resolve("dir123456789/jdk12");
+		FileUtils.mkdirs(jdkPath);
+		initMockJdkDir(jdkPath, "12.5.1");
+		environmentVariables.set("JAVA_HOME", config.cachePath().resolve("dir123~1/jdk12"));
+
+		JdkProvider javahome = JdkProviders.instance().byName("javahome", null);
+		Jdk jdk = javahome.getInstalledByPath(jdkPath);
+		assertThat(jdk, notNullValue());
 	}
 
 	@Test

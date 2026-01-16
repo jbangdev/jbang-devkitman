@@ -1,5 +1,7 @@
 package dev.jbang.devkitman;
 
+import static dev.jbang.devkitman.util.FileUtils.realPath;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -378,7 +380,7 @@ public interface Jdk extends Comparable<Jdk> {
 		}
 
 		public static <T extends InstalledJdk> Predicate<T> path(Path jdkPath) {
-			return jdk -> jdkPath.startsWith(jdk.home());
+			return jdk -> realPath(jdkPath).startsWith(realPath(jdk.home()));
 		}
 	}
 }

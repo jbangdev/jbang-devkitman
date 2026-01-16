@@ -144,6 +144,14 @@ public class FileUtils {
 		return false;
 	}
 
+	public static Path realPath(Path p) {
+		try {
+			return p.toRealPath();
+		} catch (IOException e) {
+			return p.toAbsolutePath();
+		}
+	}
+
 	public static boolean isValidPath(String path) {
 		try {
 			Paths.get(path);
