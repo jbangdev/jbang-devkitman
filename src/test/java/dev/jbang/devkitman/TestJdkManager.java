@@ -136,6 +136,13 @@ public class TestJdkManager extends BaseTest {
 	}
 
 	@Test
+	void testDefaultZeroExact() {
+		Arrays.asList(11, 12, 13).forEach(this::createMockJdk);
+		JdkManager jm = jdkManager();
+		assertThat(jm.getInstalledJdk("0"), nullValue());
+	}
+
+	@Test
 	void testHasTagJdk() {
 		createMockJdk(11);
 		JdkManager jm = jdkManager();

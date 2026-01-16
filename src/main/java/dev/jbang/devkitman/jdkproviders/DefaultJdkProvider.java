@@ -98,7 +98,7 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 			return (Jdk.LinkedJdk) createJdk(jdk);
 		} else {
 			// Finally we fall back to the default implementation
-			return (Jdk.LinkedJdk) super.getInstalledByVersion(version, true);
+			return (Jdk.LinkedJdk) super.getInstalledByVersion(version, openVersion);
 		}
 	}
 
