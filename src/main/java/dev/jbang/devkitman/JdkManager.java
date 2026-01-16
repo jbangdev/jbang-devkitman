@@ -302,8 +302,14 @@ public class JdkManager {
 				jdk = getJdkByVersion(defaultJavaVersion, openVersion, providerFilter);
 				if (jdk == null) {
 					// If we can't find the default version or higher,
-					// we'll just find the highest version available
-					jdk = prevAvailableJdk(defaultJavaVersion).orElse(null);
+					// we'll just find the highest version installed
+					jdk = prevInstalledJdk(Jdk.Predicates.maxVersion(defaultJavaVersion),
+							JdkProvider.Predicates.all)
+						.orElse(null);
+					if (jdk == null) {
+						// Final attempt: find the highest available version
+						jdk = prevAvailableJdk(defaultJavaVersion).orElse(null);
+					}
 				}
 			}
 		}
@@ -576,7 +582,7 @@ public class JdkManager {
 	 */
 	private Optional<Jdk.AvailableJdk> prevAvailableJdk(int maxVersion) {
 		return listAvailableJdks().stream()
-			.filter(jdk -> jdk.majorVersion() <= maxVersion)
+			.filter(Jdk.Predicates.maxVersion(maxVersion))
 			.max(Jdk::compareTo);
 	}
 

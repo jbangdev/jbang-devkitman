@@ -344,7 +344,7 @@ public class TestJdkManager extends BaseTest {
 	@Test
 	void testGetOrInstallVersion() {
 		Path home = mockJdkManager(11, 14, 17).getOrInstallJdk("17").home();
-		assertThat(home.toString(), endsWith(File.separator + "17.0.7-distro-jbang"));
+		assertThat(home.toString(), endsWith(File.separator + "17.0.7-distro-dummy"));
 		assertThat(home.resolve("release").toFile().exists(), is(true));
 	}
 
@@ -362,7 +362,16 @@ public class TestJdkManager extends BaseTest {
 	@Test
 	void testGetOrInstallVersionPlus() {
 		Path home = mockJdkManager(11, 14, 17).getOrInstallJdk("15+").home();
-		assertThat(home.toString(), endsWith(File.separator + "17.0.7-distro-jbang"));
+		assertThat(home.toString(), endsWith(File.separator + "17.0.7-distro-dummy"));
+		assertThat(home.resolve("release").toFile().exists(), is(true));
+	}
+
+	@Test
+	void testGetOrInstallVersionPlusTooHigh() {
+		JdkManager man = mockJdkManager(11, 14, 17);
+		man.listAvailableJdks().forEach(Jdk.AvailableJdk::install);
+		Path home = man.getOrInstallJdk("18+").home();
+		assertThat(home.toString(), endsWith(File.separator + "17.0.7-distro-dummy"));
 		assertThat(home.resolve("release").toFile().exists(), is(true));
 	}
 

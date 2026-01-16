@@ -97,7 +97,7 @@ public class BaseTest {
 	}
 
 	protected JdkManager mockJdkManager(String... versions) {
-		return mockJdkManager(this::createMockJdk, versions);
+		return mockJdkManager(this::createDummyJdk, versions);
 	}
 
 	protected JdkManager mockJdkManager(Function<String, Path> mockJdk, String... versions) {
@@ -112,6 +112,11 @@ public class BaseTest {
 
 	protected Path createMockJdk(String jdkVersion) {
 		Path jdkPath = config.installPath().resolve(jdkVersion + "-distro-jbang");
+		return createMockJdk(jdkPath, jdkVersion, this::initMockJdkDir);
+	}
+
+	protected Path createDummyJdk(String jdkVersion) {
+		Path jdkPath = config.installPath().resolve(jdkVersion + "-distro-dummy");
 		return createMockJdk(jdkPath, jdkVersion, this::initMockJdkDir);
 	}
 
