@@ -294,22 +294,31 @@ public class JdkManager {
 			int requestedVersion,
 			boolean openVersion,
 			@NonNull Predicate<JdkProvider> providerFilter) {
+		// First we try to get the requested version (or higher if openVersion is true)
 		Jdk jdk = getInstalledJdkByVersion(requestedVersion, openVersion, providerFilter);
 		if (jdk == null) {
+			// If we get here it's because of one of three possible reasons:
+			// 1) A specific version was requested but is not installed
+			// 2) A minimal version was requested but none is installed that matches
+			// 3) No version (= any version) was requested but no JDK is installed at all
+			// So now we try to find an alternative JDK that matches
 			if (requestedVersion > 0 && (requestedVersion >= defaultJavaVersion || !openVersion)) {
+				// If a specific version was requested (not open) or the requested version is
+				// higher than or equal to the default version we try to get a matching Jdk
+				// that is available for installation
 				jdk = getAvailableJdkByVersion(requestedVersion, openVersion);
 			} else {
-				jdk = getJdkByVersion(defaultJavaVersion, openVersion, providerFilter);
+				// If any version was requested or the requested version is lower than the
+				// default version we try the whole process again but using the default
+				// version this time and allowing open version matching
+				jdk = getJdkByVersion(defaultJavaVersion, true, providerFilter);
 				if (jdk == null) {
-					// If we can't find the default version or higher,
-					// we'll just find the highest version installed
-					jdk = prevInstalledJdk(Jdk.Predicates.maxVersion(defaultJavaVersion),
-							JdkProvider.Predicates.all)
-						.orElse(null);
-					if (jdk == null) {
-						// Final attempt: find the highest available version
-						jdk = prevAvailableJdk(defaultJavaVersion).orElse(null);
-					}
+					// If we get here it might be because the default version is simply not
+					// available so we give it one last try by looking for the next available
+					// version from the requested version and upwards (given that we already
+					// tried to get the requested and default versions, any result would be:
+					// requestedVersion < result_version < defaultJavaVersion)
+					jdk = nextAvailableJdk(requestedVersion).orElse(null);
 				}
 			}
 		}
@@ -573,16 +582,16 @@ public class JdkManager {
 	}
 
 	/**
-	 * Returns an available JDK that matches the requested version or the previous
+	 * Returns an available JDK that matches the requested version or the next
 	 * available version. Returns <code>Optional.empty()</code> if no matching JDK
 	 * was found;
 	 *
-	 * @param maxVersion the maximum version to return
+	 * @param minVersion the minimum version to return
 	 * @return an optional JDK
 	 */
-	private Optional<Jdk.AvailableJdk> prevAvailableJdk(int maxVersion) {
+	private Optional<Jdk.AvailableJdk> nextAvailableJdk(int minVersion) {
 		return listAvailableJdks().stream()
-			.filter(Jdk.Predicates.maxVersion(maxVersion))
+			.filter(Jdk.Predicates.minVersion(minVersion))
 			.max(Jdk::compareTo);
 	}
 

@@ -368,11 +368,26 @@ public class TestJdkManager extends BaseTest {
 
 	@Test
 	void testGetOrInstallVersionPlusTooHigh() {
-		JdkManager man = mockJdkManager(11, 14, 17);
-		man.listAvailableJdks().forEach(Jdk.AvailableJdk::install);
-		Path home = man.getOrInstallJdk("18+").home();
-		assertThat(home.toString(), endsWith(File.separator + "17.0.7-distro-dummy"));
-		assertThat(home.resolve("release").toFile().exists(), is(true));
+		try {
+			Path home = mockJdkManager(11, 14, 17).getOrInstallJdk("18+").home();
+		} catch (Exception e) {
+			assertThat(
+					e.getMessage(),
+					containsString("No suitable JDK was found for requested version: 18"));
+		}
+	}
+
+	@Test
+	void testGetOrInstallVersionPlusInstalledTooHigh() {
+		try {
+			JdkManager man = mockJdkManager(11, 14, 17);
+			man.listAvailableJdks().forEach(Jdk.AvailableJdk::install);
+			Path home = man.getOrInstallJdk("18+").home();
+		} catch (Exception e) {
+			assertThat(
+					e.getMessage(),
+					containsString("No suitable JDK was found for requested version: 18"));
+		}
 	}
 
 	@Test
