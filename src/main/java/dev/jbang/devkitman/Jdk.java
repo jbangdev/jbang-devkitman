@@ -86,7 +86,7 @@ public interface Jdk extends Comparable<Jdk> {
 
 			@Override
 			public String toString() {
-				return majorVersion() + " (" + version + ", " + id + ", " + ", " + tags + "))";
+				return majorVersion() + " (" + version + ", " + id + ", " + tags + "))";
 			}
 		}
 	}
@@ -171,9 +171,7 @@ public interface Jdk extends Comparable<Jdk> {
 			@Override
 			public String toString() {
 				return majorVersion() + " (" + version + (provider.hasFixedVersions() ? " [fixed]" : " [dynamic]")
-						+ ", " + id
-						+ ", "
-						+ home + ", " + tags + "))";
+						+ ", " + id + ", " + home + ", " + tags + "))";
 			}
 
 			@NonNull
