@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
 import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
+import dev.jbang.devkitman.jdkinstallers.MetadataJdkInstaller;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.jdkproviders.MockJdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
@@ -209,21 +210,26 @@ public class BaseTest {
 		RemoteAccessProvider rap = new RemoteAccessProvider() {
 			@Override
 			public Path downloadFromUrl(String url) throws IOException {
-				if (!url.startsWith("https://api.foojay.io/disco/v3.0/ids/") || !url.endsWith("/redirect")) {
-					throw new IOException("Unexpected URL: " + url);
+				if (url.startsWith("https://api.foojay.io/disco/v3.0/ids/") && url.endsWith("/redirect")) {
+					return testJdkFile;
+				} else if (url.startsWith("https://github.com/adoptium/") && url.endsWith(".zip")) {
+					return testJdkFile;
 				}
-				return testJdkFile;
+				throw new IOException("Unexpected URL: " + url);
 			}
 
 			@Override
 			public <T> T resultFromUrl(
 					String url, Function<InputStream, T> streamToObject)
 					throws IOException {
-				if (!url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {
-					throw new IOException("Unexpected URL: " + url);
+				if (url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {
+					return streamToObject.apply(
+							getClass().getResourceAsStream("/testFoojayInstall.json"));
+				} else if (url.startsWith(MetadataJdkInstaller.METADATA_BASE_URL)) {
+					return streamToObject.apply(
+							getClass().getResourceAsStream("/testMetadataInstall.json"));
 				}
-				return streamToObject.apply(
-						getClass().getResourceAsStream("/testInstall.json"));
+				throw new IOException("Unexpected URL: " + url);
 			}
 		};
 
