@@ -2,27 +2,30 @@ package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
 import java.util.stream.Stream;
 
+import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkInstaller;
+import dev.jbang.devkitman.JdkInstallers;
 import dev.jbang.devkitman.JdkProvider;
-import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
+import dev.jbang.devkitman.jdkinstallers.MetadataJdkInstaller;
 import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * JBang's main JDK provider that (by default) can download and install the JDKs
- * provided by the Foojay Disco API. They get installed in the user's JBang
+ * provided by the Java Metadata API. They get installed in the user's JBang
  * folder.
  */
 public class JBangJdkProvider extends BaseFoldersJdkProvider {
 	protected JdkInstaller jdkInstaller;
+
+	public static final String DEFAULT_INSTALLER = "foojay";
 
 	public JBangJdkProvider() {
 		this(getJBangJdkDir());
@@ -140,11 +143,12 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 		@Override
 		public JdkProvider create(@NonNull Config config) {
 			JBangJdkProvider prov = new JBangJdkProvider(config.installPath());
-			return prov
-				.installer(new FoojayJdkInstaller(prov)
-					.distro(config.properties().getOrDefault("distro", null)));
-			// TODO make RAP configurable
-			// .remoteAccessProvider(RemoteAccessProvider.createDefaultRemoteAccessProvider(config.cachePath));
+
+			String instName = config.properties().getOrDefault("installer", DEFAULT_INSTALLER);
+			JdkInstallers.Discovery.Config instConfig = JdkInstallers.config(prov, config.properties());
+			JdkInstaller installer = JdkInstallers.instance().byName(instName, instConfig);
+
+			return prov.installer(installer);
 		}
 	}
 }
