@@ -138,7 +138,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 		}
 
 		@Override
-		public JdkProvider create(Config config) {
+		public JdkProvider create(@NonNull Config config) {
 			JBangJdkProvider prov = new JBangJdkProvider(config.installPath());
 			return prov
 				.installer(new FoojayJdkInstaller(prov)

@@ -222,7 +222,7 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 		}
 
 		@Override
-		public JdkProvider create(Config config) {
+		public JdkProvider create(@NonNull Config config) {
 			String defaultLink = config.properties()
 				.computeIfAbsent("link",
 						k -> config.installPath().resolve(PROVIDER_ID).toString());

@@ -136,7 +136,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		}
 
 		@Override
-		public JdkProvider create(Config config) {
+		public JdkProvider create(@NonNull Config config) {
 			return new LinkedJdkProvider(config.installPath());
 		}
 	}

@@ -22,7 +22,7 @@ public interface JdkDiscovery {
 	String name();
 
 	@Nullable
-	JdkProvider create(Config config);
+	JdkProvider create(@NonNull Config config);
 
 	class Config {
 		@NonNull

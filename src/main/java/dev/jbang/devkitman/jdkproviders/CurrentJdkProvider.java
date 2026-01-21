@@ -55,7 +55,7 @@ public class CurrentJdkProvider extends BaseJdkProvider {
 		}
 
 		@Override
-		public @NonNull JdkProvider create(Config config) {
+		public @NonNull JdkProvider create(@NonNull Config config) {
 			return new CurrentJdkProvider();
 		}
 	}
