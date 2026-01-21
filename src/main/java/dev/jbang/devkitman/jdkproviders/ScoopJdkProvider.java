@@ -66,7 +66,7 @@ public class ScoopJdkProvider extends BaseFoldersJdkProvider {
 		}
 
 		@Override
-		public JdkProvider create(Config config) {
+		public JdkProvider create(@NonNull Config config) {
 			return new ScoopJdkProvider();
 		}
 	}
