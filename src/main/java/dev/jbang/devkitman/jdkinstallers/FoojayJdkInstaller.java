@@ -22,6 +22,7 @@ import com.google.gson.GsonBuilder;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkInstaller;
+import dev.jbang.devkitman.JdkInstallers;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.*;
 
@@ -367,6 +368,20 @@ public class FoojayJdkInstaller implements JdkInstaller {
 				@NonNull String downloadUrl, @NonNull Set<String> tags) {
 			super(provider, id, version, tags);
 			this.downloadUrl = downloadUrl;
+		}
+	}
+
+	public static class Discovery implements JdkInstallers.Discovery {
+		@Override
+		public @NonNull String name() {
+			return "foojay";
+		}
+
+		@Override
+		public @NonNull JdkInstaller create(Config config) {
+			FoojayJdkInstaller installer = new FoojayJdkInstaller(config.jdkProvider());
+			installer.distro(config.properties().getOrDefault("distro", null));
+			return installer;
 		}
 	}
 }
