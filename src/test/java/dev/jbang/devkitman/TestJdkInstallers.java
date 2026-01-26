@@ -22,7 +22,7 @@ public class TestJdkInstallers extends BaseTest {
 
 	@BeforeEach
 	protected void initInstallerEnv(@TempDir Path tempPath) throws IOException {
-		iconfig = JdkInstallers.config(createJbangProvider(), java.util.Collections.emptyMap());
+		iconfig = JdkInstallers.config(createJbangProvider(), java.util.Collections.emptyMap(), null);
 	}
 
 	@Test

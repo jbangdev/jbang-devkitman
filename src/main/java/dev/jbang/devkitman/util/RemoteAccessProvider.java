@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 
+import org.apache.http.impl.client.HttpClientBuilder;
+
 public interface RemoteAccessProvider {
 
 	Path downloadFromUrl(String url) throws IOException;
@@ -22,16 +24,34 @@ public interface RemoteAccessProvider {
 		return new DefaultRemoteAccessProvider();
 	}
 
+	static RemoteAccessProvider createDefaultRemoteAccessProvider(HttpClientBuilder clientBuilder) {
+		if (clientBuilder != null) {
+			return new DefaultRemoteAccessProvider(clientBuilder);
+		} else {
+			return new DefaultRemoteAccessProvider();
+		}
+	}
+
 	class DefaultRemoteAccessProvider implements RemoteAccessProvider {
+		private final HttpClientBuilder clientBuilder;
+
+		public DefaultRemoteAccessProvider() {
+			this.clientBuilder = NetUtils.createDefaultHttpClientBuilder();
+		}
+
+		public DefaultRemoteAccessProvider(HttpClientBuilder clientBuilder) {
+			this.clientBuilder = clientBuilder;
+		}
+
 		@Override
 		public Path downloadFromUrl(String url) throws IOException {
-			return NetUtils.downloadFromUrl(url);
+			return NetUtils.downloadFromUrl(clientBuilder, url);
 		}
 
 		@Override
 		public <T> T resultFromUrl(String url, Function<InputStream, T> streamToObject)
 				throws IOException {
-			return NetUtils.resultFromUrl(url, streamToObject);
+			return NetUtils.resultFromUrl(clientBuilder, url, streamToObject);
 		}
 	}
 }
