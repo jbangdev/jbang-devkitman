@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -13,7 +12,7 @@ import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.JdkInstallers;
 import dev.jbang.devkitman.JdkProvider;
-import dev.jbang.devkitman.jdkinstallers.MetadataJdkInstaller;
+import dev.jbang.devkitman.jdkinstallers.FoojayJdkInstaller;
 import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
 
@@ -145,7 +144,8 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 			JBangJdkProvider prov = new JBangJdkProvider(config.installPath());
 
 			String instName = config.properties().getOrDefault("installer", DEFAULT_INSTALLER);
-			JdkInstallers.Discovery.Config instConfig = JdkInstallers.config(prov, config.properties());
+			JdkInstallers.Discovery.Config instConfig = JdkInstallers.config(prov, config.properties(),
+					config.cachePath());
 			JdkInstaller installer = JdkInstallers.instance().byName(instName, instConfig);
 
 			return prov.installer(installer);

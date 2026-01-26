@@ -17,6 +17,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.cache.CacheConfig;
 import org.apache.http.impl.client.cache.CachingHttpClientBuilder;
+import org.jspecify.annotations.NonNull;
 
 public class NetUtils {
 
@@ -53,12 +54,14 @@ public class NetUtils {
 	}
 
 	public static HttpClientBuilder createDefaultHttpClientBuilder() {
+		return createCachingHttpClientBuilder(Paths.get("http-cache"));
+	}
+
+	public static HttpClientBuilder createCachingHttpClientBuilder(@NonNull Path cacheDir) {
 		CacheConfig cacheConfig = CacheConfig.custom().setMaxCacheEntries(1000).build();
 
-		FileHttpCacheStorage cacheStorage = new FileHttpCacheStorage(Paths.get("http-cache"));
+		FileHttpCacheStorage cacheStorage = new FileHttpCacheStorage(cacheDir);
 
-		// return
-		// HttpClientBuilder.create().setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG);
 		return CachingHttpClientBuilder.create()
 			.setCacheConfig(cacheConfig)
 			.setHttpCacheStorage(cacheStorage)

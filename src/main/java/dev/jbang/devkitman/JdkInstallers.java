@@ -1,5 +1,8 @@
 package dev.jbang.devkitman;
 
+import static dev.jbang.devkitman.util.FileUtils.deleteOnExit;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -24,8 +27,8 @@ public class JdkInstallers {
 		return INSTANCE;
 	}
 
-	public static Discovery.Config config(JdkProvider jdkProvider, Map<String, String> properties) {
-		return new Discovery.Config(jdkProvider, properties);
+	public static Discovery.Config config(JdkProvider jdkProvider, Map<String, String> properties, Path cachePath) {
+		return new Discovery.Config(jdkProvider, properties, cachePath);
 	}
 
 	/**
@@ -120,13 +123,15 @@ public class JdkInstallers {
 			private final JdkProvider jdkProvider;
 			@NonNull
 			private final Map<String, String> properties;
+			private Path cachePath;
 
-			public Config(@NonNull JdkProvider jdkProvider, @Nullable Map<String, String> properties) {
+			public Config(@NonNull JdkProvider jdkProvider, @Nullable Map<String, String> properties, Path cachePath) {
 				this.jdkProvider = jdkProvider;
 				this.properties = new HashMap<>();
 				if (properties != null) {
 					this.properties.putAll(properties);
 				}
+				this.cachePath = cachePath;
 			}
 
 			public @NonNull JdkProvider jdkProvider() {
@@ -137,8 +142,21 @@ public class JdkInstallers {
 				return properties;
 			}
 
+			public @NonNull Path cachePath() {
+				if (cachePath == null) {
+					// If no cache path is set, we create a temp dir as a curtesy that will be
+					// deleted on exit
+					try {
+						cachePath = deleteOnExit(java.nio.file.Files.createTempDirectory("jdk-installer-cache"));
+					} catch (java.io.IOException e) {
+						throw new RuntimeException(e);
+					}
+				}
+				return cachePath;
+			}
+
 			public Config copy() {
-				return new Config(jdkProvider, properties);
+				return new Config(jdkProvider, properties, cachePath);
 			}
 		}
 	}

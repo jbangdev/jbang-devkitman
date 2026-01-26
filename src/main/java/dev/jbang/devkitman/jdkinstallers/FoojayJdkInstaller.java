@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -381,6 +382,9 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		public @NonNull JdkInstaller create(Config config) {
 			FoojayJdkInstaller installer = new FoojayJdkInstaller(config.jdkProvider());
 			installer.distro(config.properties().getOrDefault("distro", null));
+			HttpClientBuilder httpClientBuilder = NetUtils.createCachingHttpClientBuilder(config.cachePath());
+			RemoteAccessProvider rap = RemoteAccessProvider.createDefaultRemoteAccessProvider(httpClientBuilder);
+			installer.remoteAccessProvider(rap);
 			return installer;
 		}
 	}
