@@ -157,7 +157,7 @@ public class JavaUtils {
 		return jdkHome;
 	}
 
-	static public void safeDeleteJdk(@NonNull Path jdkHome) {
+	public static void safeDeleteJdk(@NonNull Path jdkHome) {
 		if (OsUtils.isWindows()) {
 			// On Windows we have to check nobody is currently using the JDK or we could
 			// be causing all kinds of trouble
@@ -173,6 +173,44 @@ public class JavaUtils {
 			}
 		} else {
 			FileUtils.deletePath(jdkHome);
+		}
+	}
+
+	public static void installJdk(Path jdkPkg, Path jdkDir) throws IOException {
+		Path jdkTmpDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".tmp");
+		Path jdkOldDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".old");
+		FileUtils.deletePath(jdkTmpDir);
+		FileUtils.deletePath(jdkOldDir);
+		try {
+			LOGGER.log(Level.FINE, "Unpacking to {0}", jdkDir);
+			// Unpack JDK package to temp dir
+			UnpackUtils.unpackJdk(jdkPkg, jdkTmpDir);
+			// Check if the package contains a valid JDK
+			Optional<String> v = JavaUtils.resolveJavaVersionStringFromPath(jdkTmpDir);
+			if (!v.isPresent()) {
+				throw new IllegalStateException("The JDK package does not seem to contain a valid JDK");
+			}
+			if (Files.isDirectory(jdkDir)) {
+				// Rename existing JDK dir to have an .old extension
+				Files.move(jdkDir, jdkOldDir);
+			} else if (Files.isSymbolicLink(jdkDir)) {
+				// This means we have a broken/invalid link
+				FileUtils.deletePath(jdkDir);
+			}
+			// Rename temp dir to the final JDK dir name
+			Files.move(jdkTmpDir, jdkDir);
+			// Delete old JDK dir
+			FileUtils.deletePath(jdkOldDir);
+		} catch (Exception e) {
+			FileUtils.deletePath(jdkTmpDir);
+			if (!Files.isDirectory(jdkDir) && Files.isDirectory(jdkOldDir)) {
+				try {
+					Files.move(jdkOldDir, jdkDir);
+				} catch (IOException ex) {
+					// Ignore
+				}
+			}
+			throw new IOException("Unable to install JDK", e);
 		}
 	}
 }

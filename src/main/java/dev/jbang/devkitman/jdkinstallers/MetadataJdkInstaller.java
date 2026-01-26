@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
@@ -314,39 +313,21 @@ public class MetadataJdkInstaller implements JdkInstaller {
 				"Downloading JDK {0}. Be patient, this can take several minutes...",
 				version);
 		String url = metadataJdk.downloadUrl;
-		LOGGER.log(Level.FINE, "Downloading {0}", url);
-		Path jdkTmpDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".tmp");
-		Path jdkOldDir = jdkDir.getParent().resolve(jdkDir.getFileName() + ".old");
-		FileUtils.deletePath(jdkTmpDir);
-		FileUtils.deletePath(jdkOldDir);
+
 		try {
+			LOGGER.log(Level.FINE, "Downloading {0}", url);
 			Path jdkPkg = remoteAccessProvider.downloadFromUrl(url);
+
 			LOGGER.log(Level.INFO, "Installing JDK {0}...", version);
-			LOGGER.log(Level.FINE, "Unpacking to {0}", jdkDir);
-			UnpackUtils.unpackJdk(jdkPkg, jdkTmpDir);
-			if (Files.isDirectory(jdkDir)) {
-				Files.move(jdkDir, jdkOldDir);
-			} else if (Files.isSymbolicLink(jdkDir)) {
-				// This means we have a broken/invalid link
-				FileUtils.deletePath(jdkDir);
-			}
-			Files.move(jdkTmpDir, jdkDir);
-			FileUtils.deletePath(jdkOldDir);
+			JavaUtils.installJdk(jdkPkg, jdkDir);
+
 			Jdk.InstalledJdk newJdk = jdkProvider.createJdk(metadataJdk.id(), jdkDir);
 			if (newJdk == null) {
 				throw new IllegalStateException("Cannot obtain version of recently installed JDK");
 			}
 			return newJdk;
 		} catch (Exception e) {
-			FileUtils.deletePath(jdkTmpDir);
-			if (!Files.isDirectory(jdkDir) && Files.isDirectory(jdkOldDir)) {
-				try {
-					Files.move(jdkOldDir, jdkDir);
-				} catch (IOException ex) {
-					// Ignore
-				}
-			}
-			String msg = "Required Java version not possible to download or install.";
+			String msg = "Required Java version not possible to download or install: " + version;
 			LOGGER.log(Level.FINE, msg);
 			throw new IllegalStateException(
 					"Unable to download or install JDK version " + version, e);
