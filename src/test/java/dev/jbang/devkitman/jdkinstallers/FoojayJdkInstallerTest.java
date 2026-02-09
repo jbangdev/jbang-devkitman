@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +20,7 @@ import dev.jbang.devkitman.BaseTest;
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkManager;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
+import dev.jbang.devkitman.util.FunctionWithError;
 import dev.jbang.devkitman.util.RemoteAccessProvider;
 
 public class FoojayJdkInstallerTest extends BaseTest {
@@ -66,7 +66,7 @@ public class FoojayJdkInstallerTest extends BaseTest {
 			}
 
 			@Override
-			public <T> T resultFromUrl(String url, Function<InputStream, T> streamToObject)
+			public <T> T resultFromUrl(String url, FunctionWithError<InputStream, T> streamToObject)
 					throws IOException {
 				// Verify the URL format matches expected Foojay API pattern
 				if (!url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {

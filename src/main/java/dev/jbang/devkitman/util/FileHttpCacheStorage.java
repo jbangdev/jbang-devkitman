@@ -3,72 +3,103 @@ package dev.jbang.devkitman.util;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.http.client.cache.HttpCacheEntry;
-import org.apache.http.client.cache.HttpCacheStorage;
-import org.apache.http.client.cache.HttpCacheUpdateCallback;
-import org.apache.http.client.cache.HttpCacheUpdateException;
-import org.apache.http.impl.client.cache.DefaultHttpCacheEntrySerializer;
+import org.apache.hc.client5.http.cache.HttpCacheCASOperation;
+import org.apache.hc.client5.http.cache.HttpCacheEntry;
+import org.apache.hc.client5.http.cache.HttpCacheStorage;
+import org.apache.hc.client5.http.cache.ResourceIOException;
 
 public class FileHttpCacheStorage implements HttpCacheStorage {
 
 	private final Path cacheDir;
-	private final DefaultHttpCacheEntrySerializer serializer;
 
 	public FileHttpCacheStorage(Path cacheDir) {
 		this.cacheDir = cacheDir;
-		this.serializer = new DefaultHttpCacheEntrySerializer();
+	}
+
+	@Override
+	public synchronized void putEntry(String key, HttpCacheEntry entry) throws ResourceIOException {
 		try {
 			Files.createDirectories(cacheDir);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to create cache directory", e);
 		}
-	}
-
-	@Override
-	public synchronized void putEntry(String key, HttpCacheEntry entry) throws IOException {
 		Path filePath = cacheDir.resolve(encodeKey(key));
-		try (OutputStream os = Files.newOutputStream(filePath);
-				BufferedOutputStream bos = new BufferedOutputStream(os)) {
-			serializer.writeTo(entry, bos);
+		try (ObjectOutputStream oos = new ObjectOutputStream(
+				new BufferedOutputStream(Files.newOutputStream(filePath)))) {
+			oos.writeObject(entry);
+		} catch (IOException e) {
+			throw new ResourceIOException("Failed to write cache entry", e);
 		}
 	}
 
 	@Override
-	public synchronized HttpCacheEntry getEntry(String key) throws IOException {
+	public synchronized HttpCacheEntry getEntry(String key) throws ResourceIOException {
 		Path filePath = cacheDir.resolve(encodeKey(key));
-		if (Files.exists(filePath)) {
-			try (InputStream is = Files.newInputStream(filePath);
-					BufferedInputStream bis = new BufferedInputStream(is)) {
-				return serializer.readFrom(bis);
+		if (!Files.exists(filePath)) {
+			return null;
+		}
+		try (ObjectInputStream ois = new ObjectInputStream(
+				new BufferedInputStream(Files.newInputStream(filePath)))) {
+			return (HttpCacheEntry) ois.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			throw new ResourceIOException("Failed to read cache entry", e);
+		}
+	}
+
+	@Override
+	public synchronized void removeEntry(String key) {
+		Path filePath = cacheDir.resolve(encodeKey(key));
+		try {
+			Files.deleteIfExists(filePath);
+		} catch (IOException e) {
+			// Ignore errors on removal
+		}
+	}
+
+	@Override
+	public synchronized void updateEntry(String key, HttpCacheCASOperation operation) throws ResourceIOException {
+		HttpCacheEntry existingEntry = getEntry(key);
+		HttpCacheEntry updatedEntry = operation.execute(existingEntry);
+		if (updatedEntry != null) {
+			putEntry(key, updatedEntry);
+		}
+	}
+
+	@Override
+	public synchronized Map<String, HttpCacheEntry> getEntries(Collection<String> keys) throws ResourceIOException {
+		Map<String, HttpCacheEntry> result = new HashMap<>();
+		for (String key : keys) {
+			HttpCacheEntry entry = getEntry(key);
+			if (entry != null) {
+				result.put(key, entry);
 			}
 		}
-		return null;
-	}
-
-	@Override
-	public synchronized void removeEntry(String key) throws IOException {
-		Path filePath = cacheDir.resolve(encodeKey(key));
-		Files.deleteIfExists(filePath);
-	}
-
-	@Override
-	public synchronized void updateEntry(String key, HttpCacheUpdateCallback callback)
-			throws IOException, HttpCacheUpdateException {
-		Path filePath = cacheDir.resolve(encodeKey(key));
-		HttpCacheEntry existingEntry = null;
-		if (Files.exists(filePath)) {
-			try (InputStream is = Files.newInputStream(filePath);
-					BufferedInputStream bis = new BufferedInputStream(is)) {
-				existingEntry = serializer.readFrom(bis);
-			}
-		}
-		HttpCacheEntry updatedEntry = callback.update(existingEntry);
-		putEntry(key, updatedEntry);
+		return result;
 	}
 
 	private String encodeKey(String key) {
-		// You can use more sophisticated encoding if necessary
-		return key.replaceAll("[^a-zA-Z0-9-_]", "_");
+		int p = key.indexOf("https://");
+		if (p == -1) {
+			p = key.indexOf("http://");
+		}
+		if (p != -1) {
+			String hap = key.substring(p);
+			p = hap.indexOf("?");
+			if (p != -1) {
+				hap = hap.substring(0, p);
+			}
+			String encoded = hap.replaceAll("[^a-zA-Z0-9-_]", "_");
+			if (encoded.length() > 100) {
+				encoded = encoded.substring(0, 100);
+			}
+			encoded = encoded + "_" + Integer.toHexString(key.hashCode()) + ".cache";
+			return encoded;
+		} else {
+			return Integer.toHexString(key.hashCode()) + ".cache";
+		}
 	}
 }

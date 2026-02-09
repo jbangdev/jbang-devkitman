@@ -1,8 +1,6 @@
 package dev.jbang.devkitman.jdkinstallers;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.Path;
@@ -13,12 +11,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkInstaller;
@@ -33,7 +28,7 @@ import dev.jbang.devkitman.util.*;
 public class FoojayJdkInstaller implements JdkInstaller {
 	protected final JdkProvider jdkProvider;
 	protected final Function<JdkResult, String> jdkId;
-	protected RemoteAccessProvider remoteAccessProvider = RemoteAccessProvider.createDefaultRemoteAccessProvider();
+	protected RemoteAccessProvider remoteAccessProvider;
 	protected String distro = DEFAULT_DISTRO;
 
 	public static final String FOOJAY_JDK_VERSIONS_URL = "https://api.foojay.io/disco/v3.0/packages?";
@@ -68,6 +63,13 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider, @NonNull Function<JdkResult, String> jdkId) {
 		this.jdkProvider = jdkProvider;
 		this.jdkId = jdkId;
+	}
+
+	protected @NonNull RemoteAccessProvider remoteAccessProvider() {
+		if (remoteAccessProvider == null) {
+			remoteAccessProvider = RemoteAccessProvider.createDefaultRemoteAccessProvider();
+		}
+		return remoteAccessProvider;
 	}
 
 	public @NonNull FoojayJdkInstaller remoteAccessProvider(@NonNull RemoteAccessProvider remoteAccessProvider) {
@@ -175,14 +177,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	private VersionsResponse readJsonFromUrl(String url) throws IOException {
-		return remoteAccessProvider.resultFromUrl(url, is -> {
-			try (InputStream ignored = is) {
-				Gson parser = new GsonBuilder().create();
-				return parser.fromJson(new InputStreamReader(is), VersionsResponse.class);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		});
+		return RemoteAccessProvider.readJsonFromUrl(remoteAccessProvider(), url, VersionsResponse.class);
 	}
 
 	// Filter out any EA releases for which a GA with
@@ -238,7 +233,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 		try {
 			LOGGER.log(Level.FINE, "Downloading {0}", url);
-			Path jdkPkg = remoteAccessProvider.downloadFromUrl(url);
+			Path jdkPkg = remoteAccessProvider().downloadFromUrl(url);
 
 			LOGGER.log(Level.INFO, "Installing JDK {0}...", version);
 			JavaUtils.installJdk(jdkPkg, jdkDir);
