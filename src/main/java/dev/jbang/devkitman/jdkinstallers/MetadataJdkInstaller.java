@@ -1,8 +1,6 @@
 package dev.jbang.devkitman.jdkinstallers;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
@@ -12,12 +10,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkInstaller;
@@ -32,8 +27,7 @@ import dev.jbang.devkitman.util.*;
 public class MetadataJdkInstaller implements JdkInstaller {
 	protected final @NonNull JdkProvider jdkProvider;
 	protected final Function<MetadataResult, String> jdkId;
-	protected @NonNull RemoteAccessProvider remoteAccessProvider = RemoteAccessProvider
-		.createDefaultRemoteAccessProvider();
+	protected RemoteAccessProvider remoteAccessProvider;
 	protected @NonNull String distro = DEFAULT_DISTRO;
 	protected String jvmImpl = DEFAULT_JVM_IMPL;
 
@@ -78,6 +72,13 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	public MetadataJdkInstaller(@NonNull JdkProvider jdkProvider, @NonNull Function<MetadataResult, String> jdkId) {
 		this.jdkProvider = jdkProvider;
 		this.jdkId = jdkId;
+	}
+
+	protected @NonNull RemoteAccessProvider remoteAccessProvider() {
+		if (remoteAccessProvider == null) {
+			remoteAccessProvider = RemoteAccessProvider.createDefaultRemoteAccessProvider();
+		}
+		return remoteAccessProvider;
 	}
 
 	public @NonNull MetadataJdkInstaller remoteAccessProvider(@NonNull RemoteAccessProvider remoteAccessProvider) {
@@ -256,15 +257,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	}
 
 	private List<MetadataResult> readJsonFromUrl(String url) throws IOException {
-		return remoteAccessProvider.resultFromUrl(url, is -> {
-			try (InputStream ignored = is) {
-				Gson parser = new GsonBuilder().create();
-				MetadataResult[] results = parser.fromJson(new InputStreamReader(is), MetadataResult[].class);
-				return Arrays.asList(results);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		});
+		return Arrays.asList(RemoteAccessProvider.readJsonFromUrl(remoteAccessProvider(), url, MetadataResult[].class));
 	}
 
 	// Filter out any EA releases for which a GA with the same major version exists
@@ -316,7 +309,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 
 		try {
 			LOGGER.log(Level.FINE, "Downloading {0}", url);
-			Path jdkPkg = remoteAccessProvider.downloadFromUrl(url);
+			Path jdkPkg = remoteAccessProvider().downloadFromUrl(url);
 
 			LOGGER.log(Level.INFO, "Installing JDK {0}...", version);
 			JavaUtils.installJdk(jdkPkg, jdkDir);

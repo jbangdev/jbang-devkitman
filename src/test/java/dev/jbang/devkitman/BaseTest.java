@@ -21,6 +21,7 @@ import dev.jbang.devkitman.jdkinstallers.MetadataJdkInstaller;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.jdkproviders.MockJdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
+import dev.jbang.devkitman.util.FunctionWithError;
 import dev.jbang.devkitman.util.JavaUtils;
 import dev.jbang.devkitman.util.RemoteAccessProvider;
 
@@ -220,7 +221,7 @@ public class BaseTest {
 
 			@Override
 			public <T> T resultFromUrl(
-					String url, Function<InputStream, T> streamToObject)
+					String url, FunctionWithError<InputStream, T> streamToObject)
 					throws IOException {
 				if (url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {
 					return streamToObject.apply(
