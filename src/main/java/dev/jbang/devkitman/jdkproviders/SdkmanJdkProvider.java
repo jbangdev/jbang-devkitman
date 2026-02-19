@@ -7,21 +7,30 @@ import org.jspecify.annotations.NonNull;
 
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkProvider;
+import dev.jbang.devkitman.util.FileUtils;
+import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * This JDK provider detects any JDKs that have been installed using the SDKMAN
  * package manager.
  */
 public class SdkmanJdkProvider extends BaseFoldersJdkProvider {
-	private static final Path JDKS_ROOT = Paths.get(System.getProperty("user.home")).resolve(".sdkman/candidates/java");
+	private static final Path JDKS_ROOT = Paths.get(".sdkman", "candidates", "java");
 
 	public SdkmanJdkProvider() {
-		super(JDKS_ROOT);
+		super(Paths.get(System.getProperty("user.home")).resolve(JDKS_ROOT));
 	}
 
 	@Override
 	public @NonNull String description() {
 		return "The JDKs installed using the SDKMAN package manager.";
+	}
+
+	@Override
+	protected boolean acceptFolder(@NonNull Path jdkFolder) {
+		return jdkFolder.startsWith(jdksRoot)
+				&& !FileUtils.isSameFolderLink(jdkFolder)
+				&& JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	public static class Discovery implements JdkDiscovery {
