@@ -55,10 +55,15 @@ versioner {
 
 dependencies {
 	implementation 'org.apache.commons:commons-compress:1.28.0'
-	implementation 'org.apache.httpcomponents.client5:httpclient5:5.6'
-	implementation 'org.apache.httpcomponents.client5:httpclient5-cache:5.6'
 	implementation 'com.google.code.gson:gson:2.13.2'
 	implementation 'org.jspecify:jspecify:1.0.0'
+
+	implementation('org.apache.httpcomponents.client5:httpclient5:5.6') {
+		// Optional: Only needed if using DefaultRemoteAccessProvider
+	}
+	implementation('org.apache.httpcomponents.client5:httpclient5-cache:5.6') {
+		// Optional: Only needed if using DefaultRemoteAccessProvider
+	}
 
 	testImplementation platform('org.junit:junit-bom:6.0.1')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -134,6 +139,19 @@ publishing {
 					connection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
 					developerConnection = 'scm:git:https://github.com/jbangdev/jbang-devkitman'
 					url = 'http://github.com/jbangdev/jbang-devkitman'
+				}
+
+				// Mark Apache HttpClient dependencies as optional
+				withXml {
+					def dependenciesNode = asNode().dependencies[0]
+					dependenciesNode.dependency.each { dep ->
+						def groupId = dep.groupId[0].text()
+						def artifactId = dep.artifactId[0].text()
+						if (groupId == 'org.apache.httpcomponents.client5' &&
+							(artifactId == 'httpclient5' || artifactId == 'httpclient5-cache')) {
+							dep.appendNode('optional', true)
+						}
+					}
 				}
 			}
 		}
