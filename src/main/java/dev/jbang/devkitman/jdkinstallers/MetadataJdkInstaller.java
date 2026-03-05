@@ -28,11 +28,11 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	protected final @NonNull JdkProvider jdkProvider;
 	protected final Function<MetadataResult, String> jdkId;
 	protected RemoteAccessProvider remoteAccessProvider;
-	protected @NonNull String distro = DEFAULT_DISTRO;
+	protected @NonNull String distros = DEFAULT_DISTROS;
 	protected String jvmImpl = DEFAULT_JVM_IMPL;
 
 	public static final String METADATA_BASE_URL = "https://joschi.github.io/java-metadata/metadata/";
-	public static final String DEFAULT_DISTRO = "temurin,adoptopenjdk";
+	public static final String DEFAULT_DISTROS = "temurin,adoptopenjdk";
 	public static final String DEFAULT_JVM_IMPL = "hotspot";
 
 	private static final Logger LOGGER = Logger.getLogger(MetadataJdkInstaller.class.getName());
@@ -110,8 +110,8 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		return this;
 	}
 
-	public @NonNull MetadataJdkInstaller distro(@Nullable String distro) {
-		this.distro = distro != null && !distro.isEmpty() ? distro : DEFAULT_DISTRO;
+	public @NonNull MetadataJdkInstaller distros(@Nullable String distros) {
+		this.distros = distros != null && !distros.isEmpty() ? distros : DEFAULT_DISTROS;
 		return this;
 	}
 
@@ -136,9 +136,9 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		List<MetadataResult> allResults = new ArrayList<>();
 		IOException lastException = null;
 
-		String[] distros = distro.split(",");
+		String[] dists = distros.split(",");
 		// Query for GA releases first
-		for (String d : distros) {
+		for (String d : dists) {
 			try {
 				List<MetadataResult> results = readJsonFromUrl(
 						getMetadataUrl("ga", OsUtils.getOS(), OsUtils.getArch(), "jdk", jvmImpl, d.trim()));
@@ -148,7 +148,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 			}
 		}
 		// And for EA releases second
-		for (String d : distros) {
+		for (String d : dists) {
 			try {
 				List<MetadataResult> results = readJsonFromUrl(
 						getMetadataUrl("ea", OsUtils.getOS(), OsUtils.getArch(), "jdk", jvmImpl, d.trim()));
@@ -201,16 +201,16 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	}
 
 	private List<MetadataResult> readMetadataForVersion(int version, boolean openVersion) throws IOException {
-		String[] distros = distro.split(",");
+		String[] dists = distros.split(",");
 		// Try GA first for all selected distros, return the first that has results
-		for (String d : distros) {
+		for (String d : dists) {
 			List<MetadataResult> results = readMetadataForVersionAndDistro(version, openVersion, "ga", d.trim());
 			if (!results.isEmpty()) {
 				return results;
 			}
 		}
 		// Try EA if no GA found
-		for (String d : distros) {
+		for (String d : dists) {
 			List<MetadataResult> results = readMetadataForVersionAndDistro(version, openVersion, "ea", d.trim());
 			if (!results.isEmpty()) {
 				return results;
@@ -220,9 +220,9 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	}
 
 	private List<MetadataResult> readMetadataForVersionAndDistro(int version, boolean openVersion, String releaseType,
-			String distro) throws IOException {
+			String distros) throws IOException {
 		List<MetadataResult> gaResults = readJsonFromUrl(
-				getMetadataUrl(releaseType, OsUtils.getOS(), OsUtils.getArch(), "jdk", jvmImpl, distro));
+				getMetadataUrl(releaseType, OsUtils.getOS(), OsUtils.getArch(), "jdk", jvmImpl, distros));
 		return filterByVersion(gaResults, version, openVersion);
 	}
 
@@ -458,7 +458,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		public @NonNull JdkInstaller create(Config config) {
 			MetadataJdkInstaller installer = new MetadataJdkInstaller(config.jdkProvider());
 			installer
-				.distro(config.properties().getOrDefault("distro", null))
+				.distros(config.properties().getOrDefault("distro", null))
 				.jvmImpl(config.properties().getOrDefault("impl", null));
 			HttpClientBuilder httpClientBuilder = NetUtils.createCachingHttpClientBuilder(config.cachePath());
 			RemoteAccessProvider rap = RemoteAccessProvider.createDefaultRemoteAccessProvider(httpClientBuilder);
