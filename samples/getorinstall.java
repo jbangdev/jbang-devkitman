@@ -1,5 +1,5 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS dev.jbang:devkitman:0.4.5
+//DEPS dev.jbang:devkitman:0.4.6
 
 import dev.jbang.devkitman.*;
 
