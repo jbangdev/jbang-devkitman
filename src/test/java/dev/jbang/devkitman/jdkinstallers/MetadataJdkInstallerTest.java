@@ -45,7 +45,7 @@ public class MetadataJdkInstallerTest extends BaseTest {
 		RemoteAccessProvider rap = createRemoteAccessProvider();
 		provider = new JBangJdkProvider(config.installPath());
 		installer = new MetadataJdkInstaller(provider)
-			.distro("temurin")
+			.distros("temurin")
 			.jvmImpl("hotspot")
 			.remoteAccessProvider(rap);
 		provider.installer(installer);
@@ -139,7 +139,7 @@ public class MetadataJdkInstallerTest extends BaseTest {
 	}
 
 	@Test
-	public void testDetermineIdIncludesDistro() {
+	public void testDetermineIdIncludesDistros() {
 		List<Jdk.AvailableJdk> jdks = installer.listAvailable().collect(Collectors.toList());
 
 		assertThat(jdks, is(not(empty())));
