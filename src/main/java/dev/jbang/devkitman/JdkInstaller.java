@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
  * JDKs on the user's system. They should be able to install and uninstall them
  * at the user's request.
  */
-public interface JdkInstaller {
+public interface JdkInstaller extends JdkDistroQuery {
 
 	/**
 	 * This method returns a set of JDKs that are available for installation.

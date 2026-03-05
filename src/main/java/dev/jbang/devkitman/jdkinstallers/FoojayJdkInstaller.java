@@ -29,11 +29,12 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	protected final JdkProvider jdkProvider;
 	protected final Function<JdkResult, String> jdkId;
 	protected RemoteAccessProvider remoteAccessProvider;
-	protected String distro = DEFAULT_DISTRO;
+	protected String distros = DEFAULT_DISTROS;
 
 	public static final String FOOJAY_JDK_VERSIONS_URL = "https://api.foojay.io/disco/v3.0/packages?";
+	public static final String FOOJAY_JDK_DISTROS_URL = "https://api.foojay.io/disco/v3.0/distributions?include_versions=false&include_synonyms=false";
 
-	public static final String DEFAULT_DISTRO = "temurin,aoj";
+	public static final String DEFAULT_DISTROS = "temurin,aoj";
 
 	private static final Logger LOGGER = Logger.getLogger(FoojayJdkInstaller.class.getName());
 
@@ -53,6 +54,15 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	public static class VersionsResponse {
 		public List<JdkResult> result;
+	}
+
+	public static class DistroResult {
+		public String name;
+		public String api_parameter;
+	}
+
+	public static class DistrosResponse {
+		public List<DistroResult> result;
 	}
 
 	public FoojayJdkInstaller(@NonNull JdkProvider jdkProvider) {
@@ -77,8 +87,8 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		return this;
 	}
 
-	public @NonNull FoojayJdkInstaller distro(String distro) {
-		this.distro = distro != null && !distro.isEmpty() ? distro : DEFAULT_DISTRO;
+	public @NonNull FoojayJdkInstaller distros(String distros) {
+		this.distros = distros != null && !distros.isEmpty() ? distros : DEFAULT_DISTROS;
 		return this;
 	}
 
@@ -95,8 +105,8 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	private VersionsResponse readPackagesForList() throws IOException {
-		return readJsonFromUrl(
-				getVersionsUrl(0, true, OsUtils.getOS(), OsUtils.getArch(), distro, "ga,ea"));
+		return readVersionsFromUrl(
+				getVersionsUrl(0, true, OsUtils.getOS(), OsUtils.getArch(), distros, "ga,ea"));
 	}
 
 	@Override
@@ -129,11 +139,11 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	private VersionsResponse readPackagesForVersion(Integer minVersion, boolean openVersion) throws IOException {
-		VersionsResponse res = readJsonFromUrl(
-				getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distro, "ga"));
+		VersionsResponse res = readVersionsFromUrl(
+				getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distros, "ga"));
 		if (res.result.isEmpty()) {
-			res = readJsonFromUrl(
-					getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distro, "ea"));
+			res = readVersionsFromUrl(
+					getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distros, "ea"));
 		}
 		return res;
 	}
@@ -176,7 +186,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		return tags;
 	}
 
-	private VersionsResponse readJsonFromUrl(String url) throws IOException {
+	private VersionsResponse readVersionsFromUrl(String url) throws IOException {
 		return RemoteAccessProvider.readJsonFromUrl(remoteAccessProvider(), url, VersionsResponse.class);
 	}
 
@@ -209,7 +219,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		.compare(o1.java_version, o2.java_version);
 
 	private Comparator<JdkResult> majorVersionSort() {
-		List<String> ds = Arrays.asList(distro.split(","));
+		List<String> ds = Arrays.asList(distros.split(","));
 		Comparator<JdkResult> jdkResultDistroComparator = Comparator.comparingInt(o -> ds.indexOf(o.distribution));
 		return Comparator
 			.comparingInt((JdkResult jdk) -> -jdk.major_version)
@@ -256,13 +266,27 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		JavaUtils.safeDeleteJdk(jdk.home());
 	}
 
+	@Override
+	public List<JdkDistro> listDistros() {
+		try {
+			DistrosResponse response = RemoteAccessProvider.readJsonFromUrl(remoteAccessProvider(),
+					FOOJAY_JDK_DISTROS_URL, DistrosResponse.class);
+			return response.result.stream()
+				.map(d -> new JdkDistro(d.api_parameter))
+				.collect(Collectors.toList());
+		} catch (IOException e) {
+			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
+			return Collections.emptyList();
+		}
+	}
+
 	private static String getVersionsUrl(int minVersion, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,
-			String distro, String status) {
-		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(minVersion, openVersion, os, arch, distro, status);
+			String distros, String status) {
+		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(minVersion, openVersion, os, arch, distros, status);
 	}
 
 	private static String getUrlParams(int version, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,
-			String distro, String status) {
+			String distros, String status) {
 		Map<String, String> params = new HashMap<>();
 		if (version > 0) {
 			String v = String.valueOf(version);
@@ -272,14 +296,14 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			params.put("version", v);
 		}
 
-		if (distro == null) {
+		if (distros == null) {
 			if (version == 0 || version == 8 || version == 11 || version >= 17) {
-				distro = "temurin";
+				distros = "temurin";
 			} else {
-				distro = "aoj";
+				distros = "aoj";
 			}
 		}
-		params.put("distro", distro);
+		params.put("distro", distros);
 
 		String archiveType;
 		if (os == OsUtils.OS.windows) {
@@ -357,7 +381,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		@Override
 		public @NonNull JdkInstaller create(Config config) {
 			FoojayJdkInstaller installer = new FoojayJdkInstaller(config.jdkProvider());
-			installer.distro(config.properties().getOrDefault("distro", null));
+			installer.distros(config.properties().getOrDefault("distro", null));
 			HttpClientBuilder httpClientBuilder = NetUtils.createCachingHttpClientBuilder(config.cachePath());
 			RemoteAccessProvider rap = RemoteAccessProvider.createDefaultRemoteAccessProvider(httpClientBuilder);
 			installer.remoteAccessProvider(rap);

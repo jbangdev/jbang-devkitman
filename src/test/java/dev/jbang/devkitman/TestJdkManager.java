@@ -487,4 +487,13 @@ public class TestJdkManager extends BaseTest {
 		jdks = jm.listInstalledJdks();
 		assertThat(jdks, empty());
 	}
+
+	@Test
+	public void testListDistros() {
+		JdkManager jm = jdkManager();
+		List<JdkDistroQuery.JdkDistro> distros = jm.listDistros();
+		assertThat(distros.size(), equalTo(30));
+		assertThat(distros.toString(), equalTo(
+				"[zulu, trava, temurin, semeru_certified, semeru, sap_machine, redhat, oracle_open_jdk, oracle, openlogic, ojdk_build, microsoft, mandrel, liberica_native, liberica, kona, jetbrains, graalvm_community, graalvm_ce8, graalvm_ce19, graalvm_ce17, graalvm_ce16, graalvm_ce11, graalvm, gluon_graalvm, dragonwell, corretto, bisheng, aoj_openj9, aoj]"));
+	}
 }

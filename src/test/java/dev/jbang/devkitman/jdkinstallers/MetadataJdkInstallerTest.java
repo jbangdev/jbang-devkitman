@@ -18,6 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import dev.jbang.devkitman.BaseTest;
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.JdkDistroQuery;
 import dev.jbang.devkitman.JdkManager;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.util.FunctionWithError;
@@ -290,5 +291,13 @@ public class MetadataJdkInstallerTest extends BaseTest {
 			assertThat(jdk.tags(), is(not(empty())));
 			assertThat(jdk.provider(), is(provider));
 		}
+	}
+
+	@Test
+	public void testListDistros() {
+		List<JdkDistroQuery.JdkDistro> distros = installer.listDistros();
+		assertThat(distros.size(), equalTo(22));
+		assertThat(distros.toString(), equalTo(
+				"[adoptopenjdk, bisheng, corretto, dragonwell, graalvm, graalvm-community, ibm, java-se-ri, jetbrains, kona, liberica, mandrel, microsoft, openjdk, oracle, oracle-graalvm, redhat, sapmachine, semeru, temurin, trava, zulu]"));
 	}
 }

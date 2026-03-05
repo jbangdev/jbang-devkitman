@@ -18,6 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import dev.jbang.devkitman.BaseTest;
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.JdkDistroQuery;
 import dev.jbang.devkitman.JdkManager;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.util.FunctionWithError;
@@ -44,7 +45,7 @@ public class FoojayJdkInstallerTest extends BaseTest {
 		RemoteAccessProvider rap = createRemoteAccessProvider();
 		provider = new JBangJdkProvider(config.installPath());
 		installer = new FoojayJdkInstaller(provider)
-			.distro("jbang")
+			.distros("jbang")
 			.remoteAccessProvider(rap);
 		provider.installer(installer);
 
@@ -69,12 +70,16 @@ public class FoojayJdkInstallerTest extends BaseTest {
 			public <T> T resultFromUrl(String url, FunctionWithError<InputStream, T> streamToObject)
 					throws IOException {
 				// Verify the URL format matches expected Foojay API pattern
-				if (!url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {
-					throw new IOException("Unexpected URL: " + url);
+				if (url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {
+					// Return our test Foojay JSON for all requests
+					return streamToObject.apply(
+							getClass().getResourceAsStream("/testFoojayInstall.json"));
+				} else if (url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_DISTROS_URL)) {
+					// Return our test Foojay JSON for all requests
+					return streamToObject.apply(
+							getClass().getResourceAsStream("/testFoojayDistros.json"));
 				}
-				// Return our test Foojay JSON for all requests
-				return streamToObject.apply(
-						getClass().getResourceAsStream("/testFoojayInstall.json"));
+				throw new IOException("Unexpected URL: " + url);
 			}
 		};
 	}
@@ -141,7 +146,7 @@ public class FoojayJdkInstallerTest extends BaseTest {
 	}
 
 	@Test
-	public void testDetermineIdIncludesDistro() {
+	public void testDetermineIdIncludesDistros() {
 		List<Jdk.AvailableJdk> jdks = installer.listAvailable().collect(Collectors.toList());
 
 		assertThat(jdks, is(not(empty())));
@@ -300,7 +305,7 @@ public class FoojayJdkInstallerTest extends BaseTest {
 	}
 
 	@Test
-	public void testDistroSortingOrder() {
+	public void testDistrosSortingOrder() {
 		// Test that JDKs are sorted by distribution preference
 		List<Jdk.AvailableJdk> jdks = installer.listAvailable().collect(Collectors.toList());
 
@@ -346,4 +351,13 @@ public class FoojayJdkInstallerTest extends BaseTest {
 			assertThat(major, allOf(greaterThanOrEqualTo(8), lessThanOrEqualTo(30)));
 		}
 	}
+
+	@Test
+	public void testListDistros() {
+		List<JdkDistroQuery.JdkDistro> distros = installer.listDistros();
+		assertThat(distros.size(), equalTo(30));
+		assertThat(distros.toString(), equalTo(
+				"[zulu, trava, temurin, semeru_certified, semeru, sap_machine, redhat, oracle_open_jdk, oracle, openlogic, ojdk_build, microsoft, mandrel, liberica_native, liberica, kona, jetbrains, graalvm_community, graalvm_ce8, graalvm_ce19, graalvm_ce17, graalvm_ce16, graalvm_ce11, graalvm, gluon_graalvm, dragonwell, corretto, bisheng, aoj_openj9, aoj]"));
+	}
+
 }

@@ -10,6 +10,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.Strictness;
 
 public interface RemoteAccessProvider {
 
@@ -26,7 +27,7 @@ public interface RemoteAccessProvider {
 	static <T> T readJsonFromUrl(RemoteAccessProvider rap, String url, Class<T> klass) throws IOException {
 		return rap.resultFromUrl(url, is -> {
 			try (InputStream ignored = is) {
-				Gson parser = new GsonBuilder().create();
+				Gson parser = new GsonBuilder().setStrictness(Strictness.LENIENT).create();
 				return parser.fromJson(new InputStreamReader(is), klass);
 			} catch (IOException e) {
 				throw new RuntimeException(e);

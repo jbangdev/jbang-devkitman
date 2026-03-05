@@ -2,6 +2,7 @@ package dev.jbang.devkitman.jdkproviders;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
@@ -9,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
+import dev.jbang.devkitman.JdkDistroQuery;
 import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.JdkInstallers;
 import dev.jbang.devkitman.JdkProvider;
@@ -21,7 +23,7 @@ import dev.jbang.devkitman.util.JavaUtils;
  * provided by the Java Metadata API. They get installed in the user's JBang
  * folder.
  */
-public class JBangJdkProvider extends BaseFoldersJdkProvider {
+public class JBangJdkProvider extends BaseFoldersJdkProvider implements JdkDistroQuery {
 	protected JdkInstaller jdkInstaller;
 
 	public static final String DEFAULT_INSTALLER = "foojay";
@@ -69,6 +71,11 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider {
 	@Override
 	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		jdkInstaller.uninstall(jdk);
+	}
+
+	@Override
+	public List<JdkDistro> listDistros() {
+		return jdkInstaller.listDistros();
 	}
 
 	@Override
