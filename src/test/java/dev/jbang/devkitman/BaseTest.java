@@ -226,6 +226,9 @@ public class BaseTest {
 				if (url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_VERSIONS_URL)) {
 					return streamToObject.apply(
 							getClass().getResourceAsStream("/testFoojayInstall.json"));
+				} else if (url.startsWith(FoojayJdkInstaller.FOOJAY_JDK_DISTROS_URL)) {
+					return streamToObject.apply(
+							getClass().getResourceAsStream("/testFoojayDistros.json"));
 				} else if (url.startsWith(MetadataJdkInstaller.METADATA_BASE_URL)) {
 					return streamToObject.apply(
 							getClass().getResourceAsStream("/testMetadataInstall.json"));
@@ -236,7 +239,7 @@ public class BaseTest {
 
 		JBangJdkProvider jbang = new JBangJdkProvider(config.installPath());
 		FoojayJdkInstaller installer = new FoojayJdkInstaller(jbang)
-			.distro("jbang")
+			.distros("jbang")
 			.remoteAccessProvider(rap);
 		installer.remoteAccessProvider(rap);
 		jbang.installer(installer);

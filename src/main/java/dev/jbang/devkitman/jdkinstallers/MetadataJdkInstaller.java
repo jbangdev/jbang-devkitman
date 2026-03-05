@@ -64,6 +64,30 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		public Integer size;
 	}
 
+	public static final List<JdkDistro> JDK_DISTROS = Arrays.asList(
+			new JdkDistro("adoptopenjdk"),
+			new JdkDistro("bisheng"),
+			new JdkDistro("corretto"),
+			new JdkDistro("dragonwell"),
+			new JdkDistro("graalvm"),
+			new JdkDistro("graalvm-community"),
+			new JdkDistro("ibm"),
+			new JdkDistro("java-se-ri"),
+			new JdkDistro("jetbrains"),
+			new JdkDistro("kona"),
+			new JdkDistro("liberica"),
+			new JdkDistro("mandrel"),
+			new JdkDistro("microsoft"),
+			new JdkDistro("openjdk"),
+			new JdkDistro("oracle"),
+			new JdkDistro("oracle-graalvm"),
+			new JdkDistro("redhat"),
+			new JdkDistro("sapmachine"),
+			new JdkDistro("semeru"),
+			new JdkDistro("temurin"),
+			new JdkDistro("trava"),
+			new JdkDistro("zulu"));
+
 	public MetadataJdkInstaller(@NonNull JdkProvider jdkProvider) {
 		this.jdkProvider = jdkProvider;
 		this.jdkId = jdk -> determineId(jdk) + "-" + jdkProvider.name();
@@ -330,6 +354,11 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	@Override
 	public void uninstall(Jdk.@NonNull InstalledJdk jdk) {
 		JavaUtils.safeDeleteJdk(jdk.home());
+	}
+
+	@Override
+	public List<JdkDistro> listDistros() {
+		return JDK_DISTROS;
 	}
 
 	/**

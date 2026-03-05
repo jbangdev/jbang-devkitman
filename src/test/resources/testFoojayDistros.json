@@ -1,0 +1,305 @@
+{
+  "result": [
+    {
+      "name": "Zulu",
+      "api_parameter": "zulu",
+      "vendor": "azul",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://www.azul.com/downloads/?package=jdk"
+    },
+    {
+      "name": "Trava",
+      "api_parameter": "trava",
+      "vendor": "community",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://github.com/TravaOpenJDK"
+    },
+    {
+      "name": "Temurin",
+      "api_parameter": "temurin",
+      "vendor": "eclipse_foundation",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://adoptium.net/temurin/releases"
+    },
+    {
+      "name": "Semeru certified",
+      "api_parameter": "semeru_certified",
+      "vendor": "ibm",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://developer.ibm.com/languages/java/semeru-runtimes/"
+    },
+    {
+      "name": "Semeru",
+      "api_parameter": "semeru",
+      "vendor": "ibm",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://developer.ibm.com/languages/java/semeru-runtimes/"
+    },
+    {
+      "name": "SAP Machine",
+      "api_parameter": "sap_machine",
+      "vendor": "sap",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://sapmachine.io"
+    },
+    {
+      "name": "Red Hat",
+      "api_parameter": "redhat",
+      "vendor": "red_hat",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://developers.redhat.com/products/openjdk/overview"
+    },
+    {
+      "name": "Oracle OpenJDK",
+      "api_parameter": "oracle_open_jdk",
+      "vendor": "oracle",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://openjdk.org/"
+    },
+    {
+      "name": "Oracle",
+      "api_parameter": "oracle",
+      "vendor": "oracle",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://www.oracle.com/java/"
+    },
+    {
+      "name": "OpenLogic",
+      "api_parameter": "openlogic",
+      "vendor": "open_logic",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://www.openlogic.com"
+    },
+    {
+      "name": "OJDKBuild",
+      "api_parameter": "ojdk_build",
+      "vendor": "community",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://github.com/ojdkbuild/ojdkbuild"
+    },
+    {
+      "name": "Microsoft",
+      "api_parameter": "microsoft",
+      "vendor": "microsoft",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://www.microsoft.com/openjdk"
+    },
+    {
+      "name": "Mandrel",
+      "api_parameter": "mandrel",
+      "vendor": "red_hat",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://developers.redhat.com/blog/2021/04/14/mandrel-a-specialized-distribution-of-graalvm-for-quarkus#"
+    },
+    {
+      "name": "Liberica Native",
+      "api_parameter": "liberica_native",
+      "vendor": "bell_soft",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://bell-sw.com/"
+    },
+    {
+      "name": "Liberica",
+      "api_parameter": "liberica",
+      "vendor": "bell_soft",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://bell-sw.com/"
+    },
+    {
+      "name": "Kona",
+      "api_parameter": "kona",
+      "vendor": "tencent",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://tencent.github.io/konajdk"
+    },
+    {
+      "name": "JetBrains",
+      "api_parameter": "jetbrains",
+      "vendor": "jetbrains",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://github.com/JetBrains/JetBrainsRuntime"
+    },
+    {
+      "name": "GraalVM Community",
+      "api_parameter": "graalvm_community",
+      "vendor": "oracle",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://www.graalvm.org/"
+    },
+    {
+      "name": "GraalVM CE 8",
+      "api_parameter": "graalvm_ce8",
+      "vendor": "oracle",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://www.graalvm.org/"
+    },
+    {
+      "name": "GraalVM CE 19",
+      "api_parameter": "graalvm_ce19",
+      "vendor": "oracle",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://www.graalvm.org/"
+    },
+    {
+      "name": "GraalVM CE 17",
+      "api_parameter": "graalvm_ce17",
+      "vendor": "oracle",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://www.graalvm.org/"
+    },
+    {
+      "name": "GraalVM CE 16",
+      "api_parameter": "graalvm_ce16",
+      "vendor": "oracle",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://www.graalvm.org/"
+    },
+    {
+      "name": "GraalVM CE 11",
+      "api_parameter": "graalvm_ce11",
+      "vendor": "oracle",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://www.graalvm.org/"
+    },
+    {
+      "name": "GraalVM",
+      "api_parameter": "graalvm",
+      "vendor": "oracle",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://www.graalvm.org/"
+    },
+    {
+      "name": "Gluon GraalVM",
+      "api_parameter": "gluon_graalvm",
+      "vendor": "gluon",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": false,
+      "build_of_graalvm": true,
+      "official_uri": "https://docs.gluonhq.com/#_graalvm"
+    },
+    {
+      "name": "Dragonwell",
+      "api_parameter": "dragonwell",
+      "vendor": "alibaba",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "http://dragonwell-jdk.io/"
+    },
+    {
+      "name": "Corretto",
+      "api_parameter": "corretto",
+      "vendor": "amazon",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://aws.amazon.com/de/corretto/"
+    },
+    {
+      "name": "Bi Sheng",
+      "api_parameter": "bisheng",
+      "vendor": "huawei",
+      "maintained": true,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://www.hikunpeng.com/en/developer/devkit/compiler?data=JDK"
+    },
+    {
+      "name": "AOJ OpenJ9",
+      "api_parameter": "aoj_openj9",
+      "vendor": "adopt_open_jdk",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://adoptopenjdk.net/"
+    },
+    {
+      "name": "AOJ",
+      "api_parameter": "aoj",
+      "vendor": "adopt_open_jdk",
+      "maintained": false,
+      "available": true,
+      "build_of_openjdk": true,
+      "build_of_graalvm": false,
+      "official_uri": "https://adoptopenjdk.net/"
+    }
+  ],
+  "message": ""
+}

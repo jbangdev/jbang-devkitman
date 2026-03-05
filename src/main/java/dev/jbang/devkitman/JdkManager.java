@@ -18,7 +18,7 @@ import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.jdkproviders.LinkedJdkProvider;
 import dev.jbang.devkitman.util.JavaUtils;
 
-public class JdkManager {
+public class JdkManager implements JdkDistroQuery {
 	public static final int DEFAULT_JAVA_VERSION = 21;
 	public final int defaultJavaVersion;
 
@@ -764,5 +764,13 @@ public class JdkManager {
 		Path currentJdk = Paths.get(jh);
 		return providers(JdkProvider.Predicates.canUpdate)
 			.anyMatch(p -> p.getInstalledByPath(currentJdk) != null);
+	}
+
+	@Override
+	public List<JdkDistroQuery.JdkDistro> listDistros() {
+		return providers(JdkProvider.Predicates.canInstall)
+			.flatMap(p -> p instanceof JdkDistroQuery ? ((JdkDistroQuery) p).listDistros().stream() : Stream.empty())
+			.distinct()
+			.collect(Collectors.toList());
 	}
 }
