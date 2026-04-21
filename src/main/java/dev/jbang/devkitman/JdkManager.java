@@ -767,7 +767,7 @@ public class JdkManager implements JdkDistroQuery {
 	}
 
 	@Override
-	public List<JdkDistroQuery.JdkDistro> listDistros() {
+	public @NonNull List<JdkDistroQuery.JdkDistro> listDistros() {
 		return providers(JdkProvider.Predicates.canInstall)
 			.flatMap(p -> p instanceof JdkDistroQuery ? ((JdkDistroQuery) p).listDistros().stream() : Stream.empty())
 			.distinct()

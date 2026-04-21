@@ -267,7 +267,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	@Override
-	public List<JdkDistro> listDistros() {
+	public @NonNull List<JdkDistro> listDistros() {
 		try {
 			DistrosResponse response = RemoteAccessProvider.readJsonFromUrl(remoteAccessProvider(),
 					FOOJAY_JDK_DISTROS_URL, DistrosResponse.class);

@@ -357,7 +357,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	}
 
 	@Override
-	public List<JdkDistro> listDistros() {
+	public @NonNull List<JdkDistro> listDistros() {
 		return JDK_DISTROS;
 	}
 

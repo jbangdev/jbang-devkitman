@@ -74,7 +74,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider implements JdkDistr
 	}
 
 	@Override
-	public List<JdkDistro> listDistros() {
+	public @NonNull List<JdkDistro> listDistros() {
 		return jdkInstaller.listDistros();
 	}
 

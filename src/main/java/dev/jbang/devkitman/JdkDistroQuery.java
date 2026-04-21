@@ -3,8 +3,14 @@ package dev.jbang.devkitman;
 import java.util.List;
 import java.util.Objects;
 
+import org.jspecify.annotations.NonNull;
+
 public interface JdkDistroQuery {
-	List<JdkDistro> listDistros();
+	@NonNull
+	default List<JdkDistro> listDistros() {
+		throw new UnsupportedOperationException(
+				"Listing available distros is not supported by " + getClass().getName());
+	}
 
 	class JdkDistro {
 		private final String name;
