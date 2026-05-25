@@ -478,7 +478,7 @@ public class JdkManager implements JdkDistroQuery {
 					resetDefault = defHome.equals(jdk.home());
 				}
 			}
-			// Check if the JDK is the global default JDK, if so we need to reset it
+			// Check if the JDK is the version default JDK, if so we need to reset it
 			Jdk.InstalledJdk defaultJdkVer = getDefaultJdk();
 			if (defaultJdkVer != null) {
 				Path defHome = defaultJdkVer.home();

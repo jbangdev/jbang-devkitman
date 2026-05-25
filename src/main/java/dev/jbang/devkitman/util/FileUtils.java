@@ -15,10 +15,12 @@ public class FileUtils {
 			// creation doesn't require any special privileges.
 			if (OsUtils.isWindows() && Files.isDirectory(target)) {
 				if (createJunction(link, target.toAbsolutePath())) {
+					LOGGER.log(Level.FINE, "Created link (junction) {0}", target);
 					return;
 				}
 			} else {
 				if (createSymbolicLink(link, target.toAbsolutePath())) {
+					LOGGER.log(Level.FINE, "Created link (symbolic) {0}", target);
 					return;
 				}
 			}
