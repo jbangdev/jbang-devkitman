@@ -5,6 +5,8 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -83,6 +85,12 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(11));
+		assertThat(jm.getDefaultJdkForVersion(11), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(11).majorVersion(), is(11));
+		assertThat(jm.getDefaultJdkForVersion(12), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(12).majorVersion(), is(12));
+		assertThat(jm.getDefaultJdkForVersion(13), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(13).majorVersion(), is(13));
 		jm.setDefaultJdk(Objects.requireNonNull(jm.getInstalledJdk("12")));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(12));
 		assertThat(jm.getDefaultJdk().linked().id(), startsWith("12.0.7-distro-jbang"));
@@ -94,6 +102,12 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(11));
+		assertThat(jm.getDefaultJdkForVersion(11), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(11).majorVersion(), is(11));
+		assertThat(jm.getDefaultJdkForVersion(14), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(14).majorVersion(), is(14));
+		assertThat(jm.getDefaultJdkForVersion(17), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(17).majorVersion(), is(17));
 		jm.setDefaultJdk(Objects.requireNonNull(jm.getInstalledJdk("16+")));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
 	}
@@ -194,9 +208,18 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(14));
+		assertThat(jm.getDefaultJdkForVersion(11), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(11).majorVersion(), is(11));
+		assertThat(jm.getDefaultJdkForVersion(14), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(14).majorVersion(), is(14));
+		assertThat(jm.getDefaultJdkForVersion(17), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(17).majorVersion(), is(17));
+		Jdk.LinkedJdk jdk14 = jm.getDefaultJdkForVersion(14);
 		jm.getInstalledJdk("14", JdkProvider.Predicates.canInstall).uninstall();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
+		assertThat(jm.getDefaultJdkForVersion(14), nullValue());
+		assertThat(Files.exists(jdk14.home(), LinkOption.NOFOLLOW_LINKS), is(false));
 	}
 
 	@Test
@@ -205,9 +228,17 @@ public class TestJdkManager extends BaseTest {
 		JdkManager jm = jdkManager();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
+		assertThat(jm.getDefaultJdkForVersion(11), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(11).majorVersion(), is(11));
+		assertThat(jm.getDefaultJdkForVersion(14), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(14).majorVersion(), is(14));
+		assertThat(jm.getDefaultJdkForVersion(17), not(nullValue()));
+		assertThat(jm.getDefaultJdkForVersion(17).majorVersion(), is(17));
+		Jdk.LinkedJdk jdk17 = jm.getDefaultJdkForVersion(17);
 		jm.getInstalledJdk("17", JdkProvider.Predicates.canInstall).uninstall();
 		assertThat(jm.getDefaultJdk(), not(nullValue()));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(14));
+		assertThat(Files.exists(jdk17.home(), LinkOption.NOFOLLOW_LINKS), is(false));
 	}
 
 	@Test
@@ -455,7 +486,9 @@ public class TestJdkManager extends BaseTest {
 		assertThat(jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()), containsInAnyOrder(11, 11, 11));
 		assertThat(jdks.stream().map(Jdk::id).collect(Collectors.toList()),
 				containsInAnyOrder("default", "12-default", "11-jbang"));
-		jdkManager().getOrInstallJdk("12", JdkProvider.Predicates.canUpdate).uninstall();
+		Jdk.InstalledJdk jdk12 = jdkManager().getOrInstallJdk("12", JdkProvider.Predicates.canUpdate);
+		jdk12.uninstall();
+		assertThat(Files.exists(jdk12.home(), LinkOption.NOFOLLOW_LINKS), is(false));
 		jdks = jdkManager().listInstalledJdks();
 		assertThat(jdks, hasSize(2));
 		assertThat(jdks.stream().map(Jdk::majorVersion).collect(Collectors.toList()), containsInAnyOrder(11, 11));
@@ -484,6 +517,9 @@ public class TestJdkManager extends BaseTest {
 		assertThat(jdks.stream().map(Jdk::id).collect(Collectors.toList()),
 				containsInAnyOrder("default", "13-default", "13.0.7-distro-jbang"));
 		jm.getOrInstallJdk("13", JdkProvider.Predicates.canInstall).uninstall();
+		for (Jdk.InstalledJdk jdk : jdks) {
+			assertThat(Files.exists(jdk.home(), LinkOption.NOFOLLOW_LINKS), is(false));
+		}
 		jdks = jm.listInstalledJdks();
 		assertThat(jdks, empty());
 	}
