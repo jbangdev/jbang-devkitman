@@ -14,11 +14,14 @@ import dev.jbang.devkitman.util.FileUtils;
  * (https://mise.jdx.dev/)
  */
 public class MiseJdkProvider extends BaseFoldersJdkProvider {
-	private static final Path JDKS_ROOT = Paths.get(System.getProperty("user.home"))
-		.resolve(".local/share/mise/installs/java");
+	private static final Path JDKS_ROOT = Paths.get(".local", "share", "mise", "installs", "java");
 
 	public MiseJdkProvider() {
-		super(JDKS_ROOT);
+		super(jdksRoot());
+	}
+
+	public static Path jdksRoot() {
+		return Paths.get(System.getProperty("user.home")).resolve(JDKS_ROOT);
 	}
 
 	@Override

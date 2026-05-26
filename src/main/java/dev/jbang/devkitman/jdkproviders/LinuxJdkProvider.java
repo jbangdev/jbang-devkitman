@@ -22,10 +22,14 @@ import dev.jbang.devkitman.util.FileUtils;
  * adjust based on identified distro.
  */
 public class LinuxJdkProvider extends BaseFoldersJdkProvider {
-	protected static final Path JDKS_ROOT = Paths.get("/usr/lib/jvm");
+	private static final Path JDKS_ROOT = Paths.get("/usr/lib/jvm");
 
 	public LinuxJdkProvider() {
-		super(JDKS_ROOT);
+		super(jdksRoot());
+	}
+
+	public static Path jdksRoot() {
+		return JDKS_ROOT;
 	}
 
 	@Override
