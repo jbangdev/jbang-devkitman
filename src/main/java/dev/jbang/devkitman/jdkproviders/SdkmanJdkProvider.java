@@ -8,7 +8,6 @@ import org.jspecify.annotations.NonNull;
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
-import dev.jbang.devkitman.util.JavaUtils;
 
 /**
  * This JDK provider detects any JDKs that have been installed using the SDKMAN
@@ -28,9 +27,7 @@ public class SdkmanJdkProvider extends BaseFoldersJdkProvider {
 
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return jdkFolder.startsWith(jdksRoot)
-				&& !FileUtils.isSameFolderLink(jdkFolder)
-				&& JavaUtils.hasJavacCmd(jdkFolder);
+		return super.acceptFolder(jdkFolder) && !FileUtils.isSameFolderLink(jdkFolder);
 	}
 
 	public static class Discovery implements JdkDiscovery {
