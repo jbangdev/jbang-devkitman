@@ -9,4 +9,5 @@ dev.jbang.devkitman.jdkproviders.MiseJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.MultiHomeJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.ScoopJdkProvider$Discovery
 dev.jbang.devkitman.jdkproviders.SdkmanJdkProvider$Discovery
+dev.jbang.devkitman.jdkproviders.WindowsJdkProvider$Discovery
 
