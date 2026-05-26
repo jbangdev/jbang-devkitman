@@ -130,8 +130,7 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return jdkFolder.startsWith(jdksRoot) && isValidId(jdkFolder.getFileName().toString())
-				&& JavaUtils.hasJavacCmd(jdkFolder);
+		return jdkFolder.startsWith(jdksRoot) && JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	private final Pattern validId = Pattern.compile("^[a-zA-Z0-9._+-]+$");
