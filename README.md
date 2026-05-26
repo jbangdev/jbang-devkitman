@@ -36,6 +36,7 @@ Then the simplest way to get started is:
 
 ```java
 //DEPS dev.jbang:devkitman:0.4.7
+//DEPS org.apache.httpcomponents.client5:httpclient5-cache:5.6
 import dev.jbang.devkitman.*;
 
 public class Main {

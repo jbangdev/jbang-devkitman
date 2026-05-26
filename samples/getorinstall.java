@@ -1,5 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS dev.jbang:devkitman:0.4.7
+//DEPS org.apache.httpcomponents.client5:httpclient5-cache:5.6
 
 import dev.jbang.devkitman.*;
 
