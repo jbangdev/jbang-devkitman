@@ -14,15 +14,15 @@ import dev.jbang.devkitman.util.FileUtils;
  * standard location of the users linux distro.
  *
  * <p>
- * For now just using `/usr/lib/devkitman` as apparently fedora, debian, ubuntu
- * and centos/rhel use it.
+ * For now just using `/usr/lib/jvm` as apparently fedora, debian, ubuntu and
+ * centos/rhel use it.
  *
  * <p>
  * If need different behavior per linux distro its intended this provider will
  * adjust based on identified distro.
  */
 public class LinuxJdkProvider extends BaseFoldersJdkProvider {
-	protected static final Path JDKS_ROOT = Paths.get("/usr/lib/devkitman");
+	protected static final Path JDKS_ROOT = Paths.get("/usr/lib/jvm");
 
 	public LinuxJdkProvider() {
 		super(JDKS_ROOT);
@@ -35,7 +35,7 @@ public class LinuxJdkProvider extends BaseFoldersJdkProvider {
 
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return super.acceptFolder(jdkFolder) && !FileUtils.isSameFolderLink(jdkFolder);
+		return super.acceptFolder(jdkFolder) && !FileUtils.isLink(jdkFolder);
 	}
 
 	public static class Discovery implements JdkDiscovery {
