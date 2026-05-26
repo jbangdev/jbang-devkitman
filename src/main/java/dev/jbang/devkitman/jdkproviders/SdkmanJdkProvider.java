@@ -17,7 +17,11 @@ public class SdkmanJdkProvider extends BaseFoldersJdkProvider {
 	private static final Path JDKS_ROOT = Paths.get(".sdkman", "candidates", "java");
 
 	public SdkmanJdkProvider() {
-		super(Paths.get(System.getProperty("user.home")).resolve(JDKS_ROOT));
+		super(jdksRoot());
+	}
+
+	public static Path jdksRoot() {
+		return Paths.get(System.getProperty("user.home")).resolve(JDKS_ROOT);
 	}
 
 	@Override
