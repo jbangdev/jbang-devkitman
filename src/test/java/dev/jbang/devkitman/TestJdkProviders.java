@@ -37,7 +37,8 @@ public class TestJdkProviders extends BaseTest {
 						"mise",
 						"multihome",
 						"scoop",
-						"sdkman"));
+						"sdkman",
+						"windows"));
 	}
 
 	@Test
@@ -78,7 +79,8 @@ public class TestJdkProviders extends BaseTest {
 						instanceOf(MiseJdkProvider.class),
 						instanceOf(MultiHomeJdkProvider.class),
 						instanceOf(ScoopJdkProvider.class),
-						instanceOf(SdkmanJdkProvider.class)));
+						instanceOf(SdkmanJdkProvider.class),
+						instanceOf(WindowsJdkProvider.class)));
 	}
 
 	@Test
