@@ -1,14 +1,13 @@
 package dev.jbang.devkitman.jdkproviders;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
-import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.OsUtils;
@@ -18,10 +17,14 @@ import dev.jbang.devkitman.util.OsUtils;
  * package manager. Windows only.
  */
 public class ScoopJdkProvider extends BaseFoldersJdkProvider {
-	private static final Path SCOOP_APPS = Paths.get(System.getProperty("user.home")).resolve("scoop/apps");
+	private static final Path JDKS_ROOT = Paths.get("scoop", "apps");
 
 	public ScoopJdkProvider() {
-		super(SCOOP_APPS);
+		super(jdksRoot());
+	}
+
+	public static Path jdksRoot() {
+		return Paths.get(System.getProperty("user.home")).resolve(JDKS_ROOT);
 	}
 
 	@Override
@@ -32,23 +35,18 @@ public class ScoopJdkProvider extends BaseFoldersJdkProvider {
 	@NonNull
 	@Override
 	protected Stream<Path> listJdkPaths() throws IOException {
-		return super.listJdkPaths().map(p -> p.resolve("current"));
+		if (Files.isDirectory(jdksRoot)) {
+			return Files.list(jdksRoot)
+				.filter(p -> p.getFileName().toString().startsWith("openjdk"))
+				.map(p -> p.resolve("current"))
+				.filter(this::acceptFolder);
+		}
+		return Stream.empty();
 	}
 
 	@Override
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return jdkFolder.getFileName().startsWith("openjdk") && super.acceptFolder(jdkFolder);
-	}
-
-	@Override
-	protected Jdk.@Nullable InstalledJdk createJdk(@NonNull Path home) {
-		try {
-			// Try to resolve any links
-			home = home.toRealPath();
-		} catch (IOException e) {
-			throw new IllegalStateException("Couldn't resolve 'current' link: " + home, e);
-		}
-		return super.createJdk(home);
+		return jdkFolder.getParent().getFileName().toString().startsWith("openjdk") && super.acceptFolder(jdkFolder);
 	}
 
 	@Override
