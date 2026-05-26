@@ -464,36 +464,44 @@ public class JdkManager implements JdkDistroQuery {
 	}
 
 	void uninstallJdk(Jdk.@NonNull InstalledJdk jdk) {
-		boolean resetDefault = false;
-		boolean resetDefaultVer = false;
+		Jdk.InstalledJdk resetDefault = null;
+		Jdk.InstalledJdk resetDefaultVer = null;
 		if (hasDefaultProvider() && !jdk.provider().equals(defaultProvider)) {
 			// Check if the JDK is the global default JDK, if so we need to reset it
 			Jdk.InstalledJdk defaultJdk = getDefaultJdk();
 			if (defaultJdk != null) {
+				boolean reset;
 				Path defHome = defaultJdk.home();
 				try {
-					resetDefault = Files.isSameFile(defHome, jdk.home());
+					reset = Files.isSameFile(defHome, jdk.home());
 				} catch (IOException ex) {
 					LOGGER.log(Level.WARNING, "Error while trying to reset global default JDK", ex);
-					resetDefault = defHome.equals(jdk.home());
+					reset = defHome.equals(jdk.home());
+				}
+				if (reset) {
+					resetDefault = defaultJdk;
 				}
 			}
 			// Check if the JDK is the version default JDK, if so we need to reset it
-			Jdk.InstalledJdk defaultJdkVer = getDefaultJdk();
+			Jdk.InstalledJdk defaultJdkVer = getDefaultJdkForVersion(jdk.majorVersion());
 			if (defaultJdkVer != null) {
+				boolean reset;
 				Path defHome = defaultJdkVer.home();
 				try {
-					resetDefaultVer = Files.isSameFile(defHome, jdk.home());
+					reset = Files.isSameFile(defHome, jdk.home());
 				} catch (IOException ex) {
 					LOGGER.log(Level.WARNING, "Error while trying to reset versioned default JDK", ex);
-					resetDefaultVer = defHome.equals(jdk.home());
+					reset = defHome.equals(jdk.home());
+				}
+				if (reset) {
+					resetDefaultVer = defaultJdkVer;
 				}
 			}
 		}
 
 		jdk.provider().uninstall(jdk);
 
-		if (resetDefault) {
+		if (resetDefault != null) {
 			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(Jdk.Predicates.minVersion(jdk.majorVersion()),
 					JdkProvider.Predicates.canInstall);
 			if (!newjdk.isPresent()) {
@@ -503,11 +511,11 @@ public class JdkManager implements JdkDistroQuery {
 			if (newjdk.isPresent()) {
 				setDefaultJdk(newjdk.get());
 			} else {
-				removeDefaultJdk();
+				resetDefault.uninstall();
 				LOGGER.log(Level.INFO, "Global default JDK unset");
 			}
 		}
-		if (resetDefaultVer) {
+		if (resetDefaultVer != null) {
 			int v = jdk.majorVersion();
 			Optional<Jdk.InstalledJdk> newjdk = nextInstalledJdk(Jdk.Predicates.exactVersion(v),
 					JdkProvider.Predicates.canInstall);
@@ -517,7 +525,7 @@ public class JdkManager implements JdkDistroQuery {
 			if (newjdk.isPresent()) {
 				setDefaultJdkForVersion(newjdk.get());
 			} else {
-				removeDefaultJdkForVersion(v);
+				resetDefaultVer.uninstall();
 				LOGGER.log(Level.INFO, "Versioned default JDK unset");
 			}
 		}
