@@ -158,7 +158,7 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		if (!jdkFolder.equals(defaultJdkLink) && !jdkFolder.startsWith(jdksRoot)) {
+		if (!jdkFolder.equals(defaultJdkLink) && !isUnderRoot(jdkFolder)) {
 			return false;
 		}
 		String nm = jdkFolder.getFileName().toString();
