@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -131,35 +130,7 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return isUnderRoot(jdkFolder) && JavaUtils.hasJavacCmd(jdkFolder);
-	}
-
-	/**
-	 * Checks if the given path is under the jdksRoot directory. This method handles
-	 * the case where the paths may have different canonical forms (e.g. /var vs
-	 * /private/var on macOS) by falling back to toRealPath() comparison when a
-	 * simple startsWith check fails.
-	 */
-	protected boolean isUnderRoot(@NonNull Path jdkFolder) {
-		if (jdkFolder.startsWith(jdksRoot)) {
-			return true;
-		}
-		try {
-			return jdkFolder.toRealPath().startsWith(realJdksRoot());
-		} catch (IOException e) {
-			return false;
-		}
-	}
-
-	private final AtomicReference<Path> realJdksRootCache = new AtomicReference<>();
-
-	private Path realJdksRoot() throws IOException {
-		Path cached = realJdksRootCache.get();
-		if (cached == null) {
-			cached = jdksRoot.toRealPath();
-			realJdksRootCache.set(cached);
-		}
-		return cached;
+		return jdkFolder.startsWith(jdksRoot) && JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	private final Pattern validId = Pattern.compile("^[a-zA-Z0-9._+-]+$");
