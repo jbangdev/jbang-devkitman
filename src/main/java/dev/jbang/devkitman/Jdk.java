@@ -11,6 +11,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.jdkproviders.ExternalJdkProvider;
+import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
 
 public interface Jdk extends Comparable<Jdk> {
@@ -229,12 +230,7 @@ public interface Jdk extends Comparable<Jdk> {
 			@Override
 			@NonNull
 			public InstalledJdk linked() {
-				Path jdkHome;
-				try {
-					jdkHome = home().toRealPath();
-				} catch (Exception e) {
-					jdkHome = home().toAbsolutePath();
-				}
+				Path jdkHome = FileUtils.realPath(home());
 				// First look for a Jdk in updatable non-linking providers
 				InstalledJdk linkedJdk = getLinkedJdk(jdkHome, p -> p.canUpdate() && !p.hasLinkedVersions());
 				if (linkedJdk == null) {

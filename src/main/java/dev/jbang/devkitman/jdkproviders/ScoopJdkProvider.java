@@ -20,7 +20,11 @@ public class ScoopJdkProvider extends BaseFoldersJdkProvider {
 	private static final Path JDKS_ROOT = Paths.get("scoop", "apps");
 
 	public ScoopJdkProvider() {
-		super(jdksRoot());
+		this(jdksRoot());
+	}
+
+	ScoopJdkProvider(@NonNull Path jdksRoot) {
+		super(jdksRoot);
 	}
 
 	public static Path jdksRoot() {

@@ -26,7 +26,7 @@ public class MacJdkProvider extends BaseFoldersJdkProvider {
 	private static final String CONTENTS_HOME = "Contents/Home";
 
 	public MacJdkProvider() {
-		super(jdksRoot());
+		this(jdksRoot());
 	}
 
 	MacJdkProvider(@NonNull Path jdksRoot) {

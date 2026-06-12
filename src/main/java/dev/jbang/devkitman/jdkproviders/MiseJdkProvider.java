@@ -17,7 +17,11 @@ public class MiseJdkProvider extends BaseFoldersJdkProvider {
 	private static final Path JDKS_ROOT = Paths.get(".local", "share", "mise", "installs", "java");
 
 	public MiseJdkProvider() {
-		super(jdksRoot());
+		this(jdksRoot());
+	}
+
+	MiseJdkProvider(@NonNull Path jdksRoot) {
+		super(jdksRoot);
 	}
 
 	public static Path jdksRoot() {

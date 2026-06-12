@@ -144,12 +144,7 @@ public class JavaUtils {
 	public static Path jre2jdk(@NonNull Path jdkHome) {
 		// Detect if the current JDK is a JRE and try to find the real home
 		if (!Files.isRegularFile(jdkHome.resolve("release"))) {
-			Path jh = jdkHome.toAbsolutePath();
-			try {
-				jh = jh.toRealPath();
-			} catch (IOException e) {
-				// Ignore error
-			}
+			Path jh = FileUtils.realPath(jdkHome);
 			if (jh.endsWith("jre") && Files.isRegularFile(jh.getParent().resolve("release"))) {
 				jdkHome = jh.getParent();
 			}

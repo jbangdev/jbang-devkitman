@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 
 import dev.jbang.devkitman.jdkproviders.DefaultJdkProvider;
 import dev.jbang.devkitman.jdkproviders.JavaHomeJdkProvider;
@@ -123,6 +124,15 @@ public class TestJdkManager extends BaseTest {
 		jm.setDefaultJdk(Objects.requireNonNull(jm.getInstalledJdk("16+")));
 		assertThat(jm.getDefaultJdk().majorVersion(), is(17));
 		assertThat(jm.getDefaultJdk().id(), is("default"));
+	}
+
+	@Test
+	void testDefaultUnstableBasePath(@TempDir Path tempPath1, @TempDir Path tempPath2) throws IOException {
+		Path tmp = tempPath1.resolve("dkmtest");
+		FileUtils.createLink(tmp, tempPath2);
+		System.setProperty("user.home", tmp.resolve("home").toString());
+		config = new JdkDiscovery.Config(tmp.resolve("jdks"), null, null);
+		testDefault();
 	}
 
 	@Test
