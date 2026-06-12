@@ -36,7 +36,25 @@ jobs:
       uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
 
     - name: Build with Gradle Wrapper
-      run: ./gradlew build
+      shell: pwsh
+      run: |
+        $logFile = "build-${{ matrix.os }}.log"
+        if ($IsWindows) {
+          ./gradlew.bat build *>&1 | Tee-Object -FilePath $logFile
+        } else {
+          ./gradlew build *>&1 | Tee-Object -FilePath $logFile
+        }
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
+
+    - name: Upload build log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log-${{ matrix.os }}
+        path: build-${{ matrix.os }}.log
+        if-no-files-found: warn
 
   dependency-submission:
 
