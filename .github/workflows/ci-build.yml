@@ -36,26 +36,18 @@ jobs:
       uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
 
     - name: Build with Gradle Wrapper
-      shell: pwsh
-      run: |
-        $logFile = "build-${{ matrix.os }}.log"
-        if ($IsWindows) {
-          ./gradlew.bat build *>&1 | Tee-Object -FilePath $logFile
-        } else {
-          ./gradlew build *>&1 | Tee-Object -FilePath $logFile
-        }
-        if ($LASTEXITCODE -ne 0) {
-          exit $LASTEXITCODE
-        }
+      run: ./gradlew build
 
-    - name: Upload build log
-      if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - name: Upload test results
+      if: ${{ always() }}
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
-        name: build-log-${{ matrix.os }}
-        path: build-${{ matrix.os }}.log
+        name: test-results-${{ matrix.os }}
+        path: |
+          build/test-results/test/**/*.xml
+          build/reports/tests/test/**
         if-no-files-found: warn
-
+ 
   dependency-submission:
 
     runs-on: ubuntu-latest
