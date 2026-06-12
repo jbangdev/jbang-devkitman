@@ -38,16 +38,54 @@ jobs:
     - name: Build with Gradle Wrapper
       run: ./gradlew build
 
-    - name: Upload test results
+    - name: Upload allure results
       if: ${{ always() }}
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
-        name: test-results-${{ matrix.os }}
-        path: |
-          build/test-results/test/**/*.xml
-          build/reports/tests/test/**
+        name: allure-results-${{ matrix.os }}
+        path: build/allure-results
         if-no-files-found: warn
- 
+
+  report:
+    name: Allure Report
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ always() }}
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download all allure results
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+      with:
+        path: allure-results
+        pattern: allure-results-*
+
+    - name: Install Allure CLI
+      run: |
+        curl -sSL https://repo.maven.apache.org/maven2/io/qameta/allure/allure-commandline/2.30.0/allure-commandline-2.30.0.zip -o allure-commandline.zip
+        unzip -q allure-commandline.zip
+        echo "$PWD/allure-2.30.0/bin" >> "$GITHUB_PATH"
+
+    - name: Generate Allure reports
+      run: |
+        mkdir -p allure-report-files
+        for results_dir in allure-results/allure-results-*; do
+          [ -d "$results_dir" ] || continue
+          os="${results_dir##*/allure-results-}"
+          out_dir="allure-report-${os}"
+          allure generate "$results_dir" --clean --single-file -o "$out_dir"
+          mv "$out_dir/index.html" "allure-report-files/allure-report-${os}.html"
+        done
+
+    - name: Upload generated Allure HTML
+      if: ${{ always() }}
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: allure-html-report
+        path: allure-report-files/*.html
+        if-no-files-found: warn
+
   dependency-submission:
 
     runs-on: ubuntu-latest
