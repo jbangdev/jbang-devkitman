@@ -14,15 +14,18 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
 
 public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	protected final Path jdksRoot;
+	protected final Path realRoot;
 
 	private static final Logger LOGGER = Logger.getLogger(BaseFoldersJdkProvider.class.getName());
 
 	protected BaseFoldersJdkProvider(Path jdksRoot) {
 		this.jdksRoot = jdksRoot;
+		this.realRoot = FileUtils.realPath(jdksRoot);
 	}
 
 	@Override
@@ -130,7 +133,7 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return jdkFolder.startsWith(jdksRoot) && JavaUtils.hasJavacCmd(jdkFolder);
+		return (jdkFolder.startsWith(jdksRoot) || jdkFolder.startsWith(realRoot)) && JavaUtils.hasJavacCmd(jdkFolder);
 	}
 
 	private final Pattern validId = Pattern.compile("^[a-zA-Z0-9._+-]+$");

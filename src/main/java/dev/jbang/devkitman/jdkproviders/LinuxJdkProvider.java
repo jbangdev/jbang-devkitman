@@ -25,7 +25,11 @@ public class LinuxJdkProvider extends BaseFoldersJdkProvider {
 	private static final Path JDKS_ROOT = Paths.get("/usr/lib/jvm");
 
 	public LinuxJdkProvider() {
-		super(jdksRoot());
+		this(jdksRoot());
+	}
+
+	LinuxJdkProvider(@NonNull Path jdksRoot) {
+		super(jdksRoot);
 	}
 
 	public static Path jdksRoot() {
