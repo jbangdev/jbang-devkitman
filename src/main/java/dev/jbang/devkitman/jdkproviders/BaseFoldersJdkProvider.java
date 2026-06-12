@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
@@ -82,6 +83,14 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 
 	@Override
 	public Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
+		System.err.println("BaseFoldersJdkProvider.getInstalledByPath('" + jdkPath + "')");
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			System.err.println("installed = " + installed.collect(Collectors.toList()));
+		}
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			System.err
+				.println("installed = " + installed.filter(Jdk.Predicates.path(jdkPath)).collect(Collectors.toList()));
+		}
 		if (acceptFolder(jdkPath)) {
 			return createJdk(jdkPath);
 		}

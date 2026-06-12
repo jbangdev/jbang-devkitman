@@ -3,6 +3,7 @@ package dev.jbang.devkitman;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
@@ -116,7 +117,16 @@ public interface JdkProvider {
 	 * @return A <code>Jdk</code> object or <code>null</code>
 	 */
 	default Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
+		System.err.println("JdkProvider.getInstalledByPath('" + jdkPath + "')");
 		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			System.err.println("installed = " + installed.collect(Collectors.toList()));
+		}
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			System.err
+				.println("installed = " + installed.filter(Jdk.Predicates.path(jdkPath)).collect(Collectors.toList()));
+		}
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled()) {
+			System.err.println("getInstalledByPath('" + jdkPath + "') = " + installed);
 			return installed
 				.filter(Jdk.Predicates.path(jdkPath))
 				.findFirst()
