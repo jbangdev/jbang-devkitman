@@ -88,7 +88,7 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider implements JdkDistr
 		// We additionally allow folders that are named with a number
 		// (e.g. "11", "17", etc.) for backwards compatibility with older
 		// JBang versions
-		return (super.acceptFolder(jdkFolder) && isValidId(jdkFolder.getFileName().toString())
+		return super.acceptFolder(jdkFolder) && (isValidId(jdkFolder.getFileName().toString())
 				|| JavaUtils.parseToInt(jdkFolder.getFileName().toString(), 0) > 0)
 				&& !FileUtils.isLink(jdkFolder);
 	}
