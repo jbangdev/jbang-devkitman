@@ -1,5 +1,5 @@
 open := if os() == "macos" { "open" } else if os() == "windows" { "start" } else { "xdg-open" }
-current_version := "0.4.9"
+current_version := "0.4.10"
 
 default:
     @ just -l
