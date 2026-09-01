@@ -422,6 +422,28 @@ public class JdkManager implements JdkDistroQuery {
 			.orElse(null);
 	}
 
+	/**
+	 * Returns an <code>Jdk</code> object for an available JDK of the given version
+	 * or id. Will return <code>null</code> if no JDK of that version or id is
+	 * currently available.
+	 *
+	 * @param versionOrId A version pattern, id or <code>null</code>
+	 * @return A <code>Jdk</code> object or <code>null</code>
+	 */
+	public Jdk.@Nullable AvailableJdk getAvailableJdk(String versionOrId) {
+		if (versionOrId != null) {
+			if (JavaUtils.isRequestedVersion(versionOrId)) {
+				return getAvailableJdkByVersion(
+						JavaUtils.minRequestedVersion(versionOrId),
+						JavaUtils.isOpenVersion(versionOrId));
+			} else {
+				return getAvailableJdkById(versionOrId);
+			}
+		} else {
+			return getAvailableJdkByVersion(0, true);
+		}
+	}
+
 	private Jdk.@Nullable AvailableJdk getAvailableJdkByVersion(int version, boolean openVersion) {
 		return providers(JdkProvider.Predicates.canInstall)
 			.map(p -> p.getAvailableByVersion(version, openVersion))
