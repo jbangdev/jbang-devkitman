@@ -11,15 +11,20 @@ public class FileUtils {
 
 	public static void createLink(Path link, Path target) {
 		if (!Files.exists(link)) {
-			// On Windows we use junction for directories because their
-			// creation doesn't require any special privileges.
+			Path linkTarget = relativizeLinkTarget(link, target);
 			if (OsUtils.isWindows() && Files.isDirectory(target)) {
+				// Prefer symbolic links when Windows Developer Mode or sufficient
+				// privileges make them available, but retain junctions as a fallback.
+				if (createSymbolicLink(link, linkTarget, false)) {
+					LOGGER.log(Level.FINE, "Created link (symbolic) {0}", target);
+					return;
+				}
 				if (createJunction(link, target.toAbsolutePath())) {
 					LOGGER.log(Level.FINE, "Created link (junction) {0}", target);
 					return;
 				}
 			} else {
-				if (createSymbolicLink(link, target.toAbsolutePath())) {
+				if (createSymbolicLink(link, linkTarget, true)) {
 					LOGGER.log(Level.FINE, "Created link (symbolic) {0}", target);
 					return;
 				}
@@ -30,7 +35,16 @@ public class FileUtils {
 		}
 	}
 
-	private static boolean createSymbolicLink(Path link, Path target) {
+	static Path relativizeLinkTarget(Path link, Path target) {
+		Path linkParent = link.toAbsolutePath().normalize().getParent();
+		Path absoluteTarget = target.toAbsolutePath().normalize();
+		if (linkParent != null && absoluteTarget.startsWith(linkParent)) {
+			return linkParent.relativize(absoluteTarget);
+		}
+		return absoluteTarget;
+	}
+
+	private static boolean createSymbolicLink(Path link, Path target, boolean reportWindowsFailure) {
 		try {
 			if (!Files.exists(link) && Files.exists(link, LinkOption.NOFOLLOW_LINKS)) {
 				// We automatically remove broken links
@@ -40,7 +54,8 @@ public class FileUtils {
 			Files.createSymbolicLink(link, target);
 			return true;
 		} catch (IOException e) {
-			if (OsUtils.isWindows()
+			if (reportWindowsFailure
+					&& OsUtils.isWindows()
 					&& e instanceof AccessDeniedException
 					&& e.getMessage().contains("privilege")) {
 				LOGGER.log(
