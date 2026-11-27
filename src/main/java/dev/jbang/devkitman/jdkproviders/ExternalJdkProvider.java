@@ -8,6 +8,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.JdkFilter;
 
 /**
  * This JDK provider is only used to be able to provide Jdk objects for
@@ -32,11 +33,17 @@ public class ExternalJdkProvider extends BaseJdkProvider {
 
 	@Override
 	public Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
+		return getInstalledByPath(jdkPath, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.InstalledJdk getInstalledByPath(Path jdkPath, JdkFilter filter) {
 		// Let's try to create a somewhat unique id based on the path
 		CRC32 crc = new CRC32();
 		String path = jdkPath.toAbsolutePath().toString();
 		crc.update(path.getBytes(), 0, path.length());
 		String id = "external-" + Long.toHexString(crc.getValue());
-		return createJdk(id, jdkPath);
+		Jdk.InstalledJdk jdk = createJdk(id, jdkPath);
+		return jdk != null && filter.matches(jdk) ? jdk : null;
 	}
 }

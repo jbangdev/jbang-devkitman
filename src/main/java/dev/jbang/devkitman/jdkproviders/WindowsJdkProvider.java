@@ -18,6 +18,7 @@ import org.jspecify.annotations.NonNull;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.JavaUtils;
 import dev.jbang.devkitman.util.OsUtils;
@@ -67,11 +68,17 @@ public class WindowsJdkProvider extends BaseJdkProvider {
 	@NonNull
 	@Override
 	public Stream<Jdk.InstalledJdk> listInstalled() {
+		return listInstalled(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.InstalledJdk> listInstalled(JdkFilter filter) {
 		return dedupeByJavaHome(registryReader.listJavaHomes(JAVA_SOFT_KEY))
 			.entrySet()
 			.stream()
 			.map(this::createJdk)
-			.filter(Objects::nonNull);
+			.filter(Objects::nonNull)
+			.filter(filter::matches);
 	}
 
 	private Map<String, Path> dedupeByJavaHome(Map<String, Path> javaHomes) {
@@ -92,11 +99,16 @@ public class WindowsJdkProvider extends BaseJdkProvider {
 
 	private Jdk.InstalledJdk createJdk(Map.Entry<String, Path> javaHomeEntry) {
 		Path javaHome = javaHomeEntry.getValue();
-		if (!Files.isDirectory(javaHome) || !JavaUtils.hasJavacCmd(javaHome)) {
+		if (!Files.isDirectory(javaHome) || !JavaUtils.hasJavaInstallation(javaHome)) {
 			return null;
 		}
 		String id = registryVersionSegment(javaHomeEntry.getKey()) + "-" + name();
-		return createJdk(id, javaHome);
+		Jdk.InstalledJdk jdk = createJdk(id, javaHome);
+		if (jdk != null && JdkFilter.tag("Jre").matches(jdk)) {
+			return createJdk(registryVersionSegment(javaHomeEntry.getKey()) + "-jre-" + name(),
+					javaHome, jdk.version(), jdk.tags());
+		}
+		return jdk;
 	}
 
 	private String registryVersionSegment(String registryKey) {

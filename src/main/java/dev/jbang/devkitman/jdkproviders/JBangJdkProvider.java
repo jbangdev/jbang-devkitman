@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
 import dev.jbang.devkitman.JdkDistroQuery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.JdkInstallers;
 import dev.jbang.devkitman.JdkProvider;
@@ -50,17 +51,32 @@ public class JBangJdkProvider extends BaseFoldersJdkProvider implements JdkDistr
 	@NonNull
 	@Override
 	public Stream<Jdk.AvailableJdk> listAvailable() {
-		return jdkInstaller.listAvailable();
+		return listAvailable(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.AvailableJdk> listAvailable(JdkFilter filter) {
+		return jdkInstaller.listAvailable(filter);
 	}
 
 	@Override
 	public Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
-		return jdkInstaller.getAvailableByVersion(version, openVersion);
+		return getAvailableByVersion(version, openVersion, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.AvailableJdk getAvailableByVersion(int version, boolean openVersion, JdkFilter filter) {
+		return jdkInstaller.getAvailableByVersion(version, openVersion, filter);
 	}
 
 	@Override
 	public Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
-		return jdkInstaller.getAvailableByIdOrToken(idOrToken);
+		return getAvailableByIdOrToken(idOrToken, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.AvailableJdk getAvailableByIdOrToken(String idOrToken, JdkFilter filter) {
+		return jdkInstaller.getAvailableByIdOrToken(idOrToken, filter);
 	}
 
 	@Override

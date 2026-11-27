@@ -8,6 +8,7 @@ import org.jspecify.annotations.NonNull;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.JavaUtils;
 
@@ -31,10 +32,15 @@ public class JavaHomeJdkProvider extends BaseJdkProvider {
 	@NonNull
 	@Override
 	public Stream<Jdk.InstalledJdk> listInstalled() {
+		return listInstalled(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.InstalledJdk> listInstalled(JdkFilter filter) {
 		Path jdkHome = JavaUtils.getJavaHomeEnv();
 		if (jdkHome != null && Files.isDirectory(jdkHome)) {
 			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome);
-			if (jdk != null) {
+			if (jdk != null && filter.matches(jdk)) {
 				return Stream.of(jdk);
 			}
 		}

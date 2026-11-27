@@ -119,6 +119,14 @@ public class JavaUtils {
 		return OsUtils.searchPath("javac", jdkFolder.resolve("bin").toString()) != null;
 	}
 
+	/**
+	 * Recognizes runtime homes while retaining providers' historical acceptance of
+	 * compiler homes.
+	 */
+	public static boolean hasJavaInstallation(@NonNull Path home) {
+		return hasJavacCmd(home) || hasJavaCmd(home);
+	}
+
 	public static boolean hasNativeImageCmd(@NonNull Path jdkFolder) {
 		return OsUtils.searchPath("native-image", jdkFolder.resolve("bin").toString()) != null;
 	}

@@ -10,6 +10,7 @@ import org.jspecify.annotations.NonNull;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkProvider;
 
 /**
@@ -34,6 +35,11 @@ public class MultiHomeJdkProvider extends BaseJdkProvider {
 	@NonNull
 	@Override
 	public Stream<Jdk.InstalledJdk> listInstalled() {
+		return listInstalled(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.InstalledJdk> listInstalled(JdkFilter filter) {
 		return System.getenv()
 			.entrySet()
 			.stream()
@@ -47,7 +53,8 @@ public class MultiHomeJdkProvider extends BaseJdkProvider {
 					return null;
 				}
 			})
-			.filter(Objects::nonNull);
+			.filter(Objects::nonNull)
+			.filter(filter::matches);
 	}
 
 	@Override

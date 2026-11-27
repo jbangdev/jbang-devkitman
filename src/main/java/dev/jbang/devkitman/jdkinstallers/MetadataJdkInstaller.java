@@ -15,6 +15,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.JdkInstallers;
 import dev.jbang.devkitman.JdkProvider;
@@ -123,8 +124,13 @@ public class MetadataJdkInstaller implements JdkInstaller {
 	@NonNull
 	@Override
 	public Stream<Jdk.AvailableJdk> listAvailable() {
+		return listAvailable(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.AvailableJdk> listAvailable(JdkFilter filter) {
 		try {
-			List<MetadataResult> results = readMetadataForList();
+			List<MetadataResult> results = readMetadataForList(filter);
 			return processMetadata(results, majorVersionSort()).distinct();
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
@@ -132,7 +138,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		}
 	}
 
-	private List<MetadataResult> readMetadataForList() throws IOException {
+	private List<MetadataResult> readMetadataForList(JdkFilter filter) throws IOException {
 		List<MetadataResult> allResults = new ArrayList<>();
 		IOException lastException = null;
 
@@ -140,8 +146,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		// Query for GA releases first
 		for (String d : dists) {
 			try {
-				List<MetadataResult> results = readJsonFromUrl(
-						getMetadataUrl("ga", OsUtils.getOS(), OsUtils.getArch(), "jdk", jvmImpl, d.trim()));
+				List<MetadataResult> results = readMetadata("ga", d.trim(), filter);
 				allResults.addAll(results);
 			} catch (IOException e) {
 				lastException = e;
@@ -150,8 +155,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		// And for EA releases second
 		for (String d : dists) {
 			try {
-				List<MetadataResult> results = readJsonFromUrl(
-						getMetadataUrl("ea", OsUtils.getOS(), OsUtils.getArch(), "jdk", jvmImpl, d.trim()));
+				List<MetadataResult> results = readMetadata("ea", d.trim(), filter);
 				allResults.addAll(results);
 			} catch (IOException e) {
 				lastException = e;
@@ -169,8 +173,16 @@ public class MetadataJdkInstaller implements JdkInstaller {
 
 	@Override
 	public Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
+		return getAvailableByVersion(version, openVersion, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.AvailableJdk getAvailableByVersion(int version, boolean openVersion, JdkFilter filter) {
 		int djv = jdkProvider.manager().defaultJavaVersion;
 		Comparator<MetadataResult> preferGaSort = (j1, j2) -> {
+			if (!j1.image_type.equalsIgnoreCase(j2.image_type)) {
+				return "jdk".equalsIgnoreCase(j1.image_type) ? -1 : 1;
+			}
 			int v1 = extractMajorVersion(j1.java_version);
 			int v2 = extractMajorVersion(j2.java_version);
 
@@ -189,7 +201,7 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		};
 
 		try {
-			List<MetadataResult> results = readMetadataForVersion(version, openVersion);
+			List<MetadataResult> results = readMetadataForVersion(version, openVersion, filter);
 			return processMetadata(results, preferGaSort)
 				.filter(Jdk.Predicates.forVersion(version, openVersion))
 				.findFirst()
@@ -200,30 +212,50 @@ public class MetadataJdkInstaller implements JdkInstaller {
 		}
 	}
 
-	private List<MetadataResult> readMetadataForVersion(int version, boolean openVersion) throws IOException {
+	private List<MetadataResult> readMetadataForVersion(int version, boolean openVersion, JdkFilter filter)
+			throws IOException {
 		String[] dists = distros.split(",");
-		// Try GA first for all selected distros, return the first that has results
-		for (String d : dists) {
-			List<MetadataResult> results = readMetadataForVersionAndDistro(version, openVersion, "ga", d.trim());
-			if (!results.isEmpty()) {
-				return results;
-			}
-		}
-		// Try EA if no GA found
-		for (String d : dists) {
-			List<MetadataResult> results = readMetadataForVersionAndDistro(version, openVersion, "ea", d.trim());
-			if (!results.isEmpty()) {
-				return results;
+		for (String type : packageTypes(filter)) {
+			for (String status : Arrays.asList("ga", "ea")) {
+				for (String d : dists) {
+					List<MetadataResult> results = filterByVersion(
+							readMetadata(status, d.trim(), filter, Collections.singletonList(type)), version,
+							openVersion);
+					if (!results.isEmpty()) {
+						return results;
+					}
+				}
 			}
 		}
 		return Collections.emptyList();
 	}
 
-	private List<MetadataResult> readMetadataForVersionAndDistro(int version, boolean openVersion, String releaseType,
-			String distros) throws IOException {
-		List<MetadataResult> gaResults = readJsonFromUrl(
-				getMetadataUrl(releaseType, OsUtils.getOS(), OsUtils.getArch(), "jdk", jvmImpl, distros));
-		return filterByVersion(gaResults, version, openVersion);
+	private List<MetadataResult> readMetadata(String status, String distro, JdkFilter filter) throws IOException {
+		return readMetadata(status, distro, filter, packageTypes(filter));
+	}
+
+	private List<String> packageTypes(JdkFilter filter) {
+		List<String> types = Arrays.asList("jdk", "jre");
+		if (filter instanceof JdkFilter.Tag) {
+			String tag = ((JdkFilter.Tag) filter).tag();
+			if ("jdk".equalsIgnoreCase(tag) || "jre".equalsIgnoreCase(tag)) {
+				types = Collections.singletonList(tag.toLowerCase(Locale.ROOT));
+			}
+		}
+		return types;
+	}
+
+	private List<MetadataResult> readMetadata(String status, String distro, JdkFilter filter, List<String> types)
+			throws IOException {
+		List<MetadataResult> results = new ArrayList<>();
+		for (String type : types) {
+			readJsonFromUrl(getMetadataUrl(status, OsUtils.getOS(), OsUtils.getArch(), type, jvmImpl, distro))
+				.stream()
+				.filter(result -> type.equalsIgnoreCase(result.image_type))
+				.filter(result -> filter.matches(determineTags(result)))
+				.forEach(results::add);
+		}
+		return results;
 	}
 
 	private List<MetadataResult> filterByVersion(List<MetadataResult> results, int version, boolean openVersion) {
@@ -286,25 +318,14 @@ public class MetadataJdkInstaller implements JdkInstaller {
 
 	// Filter out any EA releases for which a GA with the same major version exists
 	private List<MetadataResult> filterEA(List<MetadataResult> jdks) {
-		Set<Integer> GAs = jdks.stream()
+		Set<String> GAs = jdks.stream()
 			.filter(jdk -> "ga".equals(jdk.release_type))
-			.map(jdk -> extractMajorVersion(jdk.java_version))
+			.map(jdk -> extractMajorVersion(jdk.java_version) + "-" + jdk.image_type)
 			.collect(Collectors.toSet());
 
-		MetadataResult[] lastJdk = new MetadataResult[] { null };
 		return jdks.stream()
-			.filter(jdk -> {
-				int majorVersion = extractMajorVersion(jdk.java_version);
-				if (lastJdk[0] == null
-						|| extractMajorVersion(lastJdk[0].java_version) != majorVersion
-								&& ("ga".equals(jdk.release_type)
-										|| !GAs.contains(majorVersion))) {
-					lastJdk[0] = jdk;
-					return true;
-				} else {
-					return false;
-				}
-			})
+			.filter(jdk -> "ga".equals(jdk.release_type)
+					|| !GAs.contains(extractMajorVersion(jdk.java_version) + "-" + jdk.image_type))
 			.collect(Collectors.toList());
 	}
 

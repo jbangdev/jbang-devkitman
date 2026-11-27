@@ -1,13 +1,15 @@
 package dev.jbang.devkitman.jdkproviders;
 
-import java.nio.file.Path;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkProvider;
+import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.OsUtils;
 
 /**
@@ -30,19 +32,20 @@ public class PathJdkProvider extends BaseJdkProvider {
 	@NonNull
 	@Override
 	public Stream<Jdk.InstalledJdk> listInstalled() {
-		Path jdkHome = null;
-		Path javac = OsUtils.searchPath("javac");
-		if (javac != null) {
-			javac = javac.toAbsolutePath();
-			jdkHome = javac.getParent().getParent();
-		}
-		if (jdkHome != null) {
-			Jdk.InstalledJdk jdk = createJdk(Discovery.PROVIDER_ID, jdkHome);
-			if (jdk != null) {
-				return Stream.of(jdk);
-			}
-		}
-		return Stream.empty();
+		return listInstalled(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.InstalledJdk> listInstalled(JdkFilter filter) {
+		// Resolve both commands independently: java and javac may belong to
+		// different installations. Preserve the JDK-only lookup's javac precedence.
+		return Stream.of(OsUtils.searchPath("javac"), OsUtils.searchPath("java"))
+			.filter(Objects::nonNull)
+			.map(command -> FileUtils.realPath(command.toAbsolutePath()).getParent().getParent())
+			.distinct()
+			.map(home -> createJdk(Discovery.PROVIDER_ID, home))
+			.filter(Objects::nonNull)
+			.filter(filter::matches);
 	}
 
 	@Override
