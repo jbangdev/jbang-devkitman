@@ -19,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 import dev.jbang.devkitman.BaseTest;
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDistroQuery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkManager;
 import dev.jbang.devkitman.jdkproviders.JBangJdkProvider;
 import dev.jbang.devkitman.util.FunctionWithError;
@@ -94,7 +95,8 @@ public class MetadataJdkInstallerTest extends BaseTest {
 			.sorted()
 			.collect(Collectors.toList());
 
-		assertThat(versions, hasItems(11, 17, 21, 23));
+		assertThat(versions, hasItems(17, 21, 23));
+		assertTrue(jdks.stream().allMatch(JdkFilter.JDK::matches));
 	}
 
 	@Test
@@ -153,7 +155,7 @@ public class MetadataJdkInstallerTest extends BaseTest {
 	@Test
 	public void testDetermineIdForJre() {
 		// Find the JRE in our test data (11.0.25+9 JRE)
-		List<Jdk.AvailableJdk> jdks = installer.listAvailable().collect(Collectors.toList());
+		List<Jdk.AvailableJdk> jdks = installer.listAvailable(JdkFilter.tag("Jre")).collect(Collectors.toList());
 
 		Jdk.AvailableJdk jre = jdks.stream()
 			.filter(j -> j.tags().contains(Jdk.Default.Tags.Jre.name()))
@@ -193,7 +195,7 @@ public class MetadataJdkInstallerTest extends BaseTest {
 
 	@Test
 	public void testDetermineTagsForJre() {
-		List<Jdk.AvailableJdk> jdks = installer.listAvailable().collect(Collectors.toList());
+		List<Jdk.AvailableJdk> jdks = installer.listAvailable(JdkFilter.tag("Jre")).collect(Collectors.toList());
 
 		Jdk.AvailableJdk jre = jdks.stream()
 			.filter(j -> j.tags().contains(Jdk.Default.Tags.Jre.name()))

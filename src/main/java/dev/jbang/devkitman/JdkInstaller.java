@@ -13,6 +13,34 @@ import org.jspecify.annotations.Nullable;
  */
 public interface JdkInstaller extends JdkDistroQuery {
 
+	default Stream<Jdk.AvailableJdk> listAvailable(JdkFilter filter) {
+		return listAvailable().filter(filter::matches);
+	}
+
+	default Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion, JdkFilter filter) {
+		Jdk.AvailableJdk candidate = getAvailableByVersion(version, openVersion);
+		if (candidate != null && filter.matches(candidate)) {
+			return candidate;
+		}
+		try (Stream<Jdk.AvailableJdk> available = listAvailable(filter)) {
+			return available.filter(Jdk.Predicates.forVersion(version, openVersion)).findFirst().orElse(null);
+		} catch (UnsupportedOperationException ex) {
+			return null;
+		}
+	}
+
+	default Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String id, JdkFilter filter) {
+		Jdk.AvailableJdk candidate = getAvailableByIdOrToken(id);
+		if (candidate != null && filter.matches(candidate)) {
+			return candidate;
+		}
+		try (Stream<Jdk.AvailableJdk> available = listAvailable(filter)) {
+			return available.filter(Jdk.Predicates.id(id)).findFirst().orElse(null);
+		} catch (UnsupportedOperationException ex) {
+			return null;
+		}
+	}
+
 	/**
 	 * This method returns a set of JDKs that are available for installation.
 	 * Implementations might set the <code>home</code> field of the JDK objects if

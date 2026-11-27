@@ -3,7 +3,6 @@ package dev.jbang.devkitman.jdkproviders;
 import static dev.jbang.devkitman.Jdk.InstalledJdk.Default.determineTagsFromJdkHome;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -15,6 +14,7 @@ import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
@@ -74,6 +74,7 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 					throw new IllegalArgumentException(
 							"Unable to determine Java version in given path: " + jdkPath);
 				}
+
 				return new AvailableDefaultJdk(this, parts[0], version.get(), jdkPath,
 						determineTagsFromJdkHome(jdkPath));
 			}
@@ -84,21 +85,38 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 	}
 
 	@Override
+	public Jdk.AvailableJdk getAvailableByIdOrToken(String idOrToken, JdkFilter filter) {
+		Jdk.AvailableJdk candidate = getAvailableByIdOrToken(idOrToken);
+		return candidate != null && filter.matches(candidate) ? candidate : null;
+	}
+
+	@Override
 	public Jdk.@Nullable LinkedJdk getInstalledByVersion(int version, boolean openVersion) {
+		return getInstalledByVersion(version, openVersion, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.LinkedJdk getInstalledByVersion(int version, boolean openVersion, JdkFilter filter) {
 		// First we check if the "default" link exists and has the correct version
 		if (acceptFolder(defaultJdkLink)) {
 			Optional<String> v = JavaUtils.resolveJavaVersionStringFromPath(defaultJdkLink);
 			if (v.isPresent() && JavaUtils.parseJavaVersion(v.get()) == version) {
-				return (Jdk.LinkedJdk) createJdk(defaultJdkLink);
+				Jdk.LinkedJdk result = (Jdk.LinkedJdk) createJdk(defaultJdkLink);
+				if (result != null && filter.matches(result)) {
+					return result;
+				}
 			}
 		}
 		// Then we check if there's a link with the exact number matching the version
 		Path jdk = jdksRoot.resolve(Integer.toString(version));
-		if (Files.isDirectory(jdk)) {
-			return (Jdk.LinkedJdk) createJdk(jdk);
-		} else {
-			// Finally we fall back to the default implementation
-			return (Jdk.LinkedJdk) super.getInstalledByVersion(version, openVersion);
+		Jdk.InstalledJdk exact = getInstalledByPath(jdk, filter);
+		if (exact != null) {
+			return (Jdk.LinkedJdk) exact;
+		}
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled(filter)) {
+			return (Jdk.LinkedJdk) installed.filter(Jdk.Predicates.forVersion(version, openVersion))
+				.findFirst()
+				.orElse(null);
 		}
 	}
 
@@ -109,6 +127,9 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 					"DefaultJdkInstaller can only install JDKs listed as available by itself");
 		}
 		AvailableDefaultJdk availJdk = (AvailableDefaultJdk) jdk;
+		if (!JdkFilter.JDK.matches(determineTagsFromJdkHome(availJdk.home))) {
+			throw new IllegalArgumentException("A JRE cannot be set as the default JDK");
+		}
 		Jdk.InstalledJdk existingJdk = getInstalledById(availJdk.id());
 		if (existingJdk != null && existingJdk.isInstalled() && !availJdk.home.equals(existingJdk.home())) {
 			uninstall(existingJdk);
@@ -166,7 +187,7 @@ public class DefaultJdkProvider extends BaseFoldersJdkProvider {
 		if (!jdkFolder.equals(defaultJdkLink) && JavaUtils.parseToInt(nm, 0) == 0) {
 			return false;
 		}
-		return FileUtils.isLink(jdkFolder) && JavaUtils.hasJavacCmd(jdkFolder);
+		return FileUtils.isLink(jdkFolder) && JavaUtils.hasJavaInstallation(jdkFolder);
 	}
 
 	@Override

@@ -14,6 +14,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
 
@@ -65,10 +66,16 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	@NonNull
 	@Override
 	public Stream<Jdk.InstalledJdk> listInstalled() {
+		return listInstalled(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.InstalledJdk> listInstalled(JdkFilter filter) {
 		try {
 			return listJdkPaths()
 				.map(this::createJdk)
-				.filter(Objects::nonNull);
+				.filter(Objects::nonNull)
+				.filter(filter::matches);
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list installed JDKs", e);
 			return Stream.empty();
@@ -77,16 +84,27 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 
 	@Override
 	public Jdk.@Nullable InstalledJdk getInstalledById(@NonNull String id) {
+		return getInstalledById(id, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.InstalledJdk getInstalledById(String id, JdkFilter filter) {
 		if (isValidId(id)) {
-			return getInstalledByPath(getJdkPath(id));
+			return getInstalledByPath(getJdkPath(id), filter);
 		}
 		return null;
 	}
 
 	@Override
 	public Jdk.@Nullable InstalledJdk getInstalledByPath(@NonNull Path jdkPath) {
+		return getInstalledByPath(jdkPath, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.InstalledJdk getInstalledByPath(Path jdkPath, JdkFilter filter) {
 		if (acceptFolder(jdkPath)) {
-			return createJdk(jdkPath);
+			Jdk.InstalledJdk jdk = createJdk(jdkPath);
+			return jdk != null && filter.matches(jdk) ? jdk : null;
 		}
 		return null;
 	}
@@ -133,7 +151,8 @@ public abstract class BaseFoldersJdkProvider extends BaseJdkProvider {
 	}
 
 	protected boolean acceptFolder(@NonNull Path jdkFolder) {
-		return (jdkFolder.startsWith(jdksRoot) || jdkFolder.startsWith(realRoot)) && JavaUtils.hasJavacCmd(jdkFolder);
+		return (jdkFolder.startsWith(jdksRoot) || jdkFolder.startsWith(realRoot))
+				&& JavaUtils.hasJavaInstallation(jdkFolder);
 	}
 
 	private final Pattern validId = Pattern.compile("^[a-zA-Z0-9._+-]+$");

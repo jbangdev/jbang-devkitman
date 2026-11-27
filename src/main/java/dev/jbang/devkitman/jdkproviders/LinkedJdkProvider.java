@@ -14,6 +14,7 @@ import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
 import dev.jbang.devkitman.JdkDiscovery;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkProvider;
 import dev.jbang.devkitman.util.FileUtils;
 import dev.jbang.devkitman.util.JavaUtils;
@@ -44,11 +45,16 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 
 	@Override
 	public Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String idOrToken) {
+		return getAvailableByIdOrToken(idOrToken, JdkFilter.JDK);
+	}
+
+	@Override
+	public Jdk.AvailableJdk getAvailableByIdOrToken(String idOrToken, JdkFilter filter) {
 		// Check if the token follows our special format
 		String[] parts = idOrToken.split("@", 2);
 		if (parts.length == 2 && isValidId(parts[0]) && FileUtils.isValidPath(parts[1])) {
 			Path jdkPath = Paths.get(parts[1]);
-			if (JavaUtils.hasJavacCmd(jdkPath)) {
+			if (JavaUtils.hasJavaInstallation(jdkPath) && filter.matches(determineTagsFromJdkHome(jdkPath))) {
 				Optional<String> version = JavaUtils.resolveJavaVersionStringFromPath(jdkPath);
 				if (!version.isPresent()) {
 					throw new IllegalArgumentException(
@@ -59,7 +65,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 			}
 			return null;
 		} else {
-			return super.getAvailableByIdOrToken(idOrToken);
+			return null;
 		}
 	}
 
@@ -77,7 +83,7 @@ public class LinkedJdkProvider extends BaseFoldersJdkProvider {
 		}
 		AvailableLinkedJdk availJdk = (AvailableLinkedJdk) jdk;
 		// If there's an existing installed Jdk with the same id, uninstall it
-		Jdk.InstalledJdk existingJdk = getInstalledById(availJdk.id());
+		Jdk.InstalledJdk existingJdk = getInstalledById(availJdk.id(), JdkFilter.and());
 		if (existingJdk != null && !FileUtils.isSameFile(availJdk.home, existingJdk.home())) {
 			LOGGER.log(
 					Level.FINE,

@@ -239,7 +239,7 @@ public interface Jdk extends Comparable<Jdk> {
 				}
 				if (linkedJdk == null) {
 					// Finally fall back to the "external" provider
-					linkedJdk = (new ExternalJdkProvider()).getInstalledByPath(jdkHome);
+					linkedJdk = (new ExternalJdkProvider()).getInstalledByPath(jdkHome, JdkFilter.and());
 					assert linkedJdk != null;
 				}
 				return linkedJdk;
@@ -250,7 +250,7 @@ public interface Jdk extends Comparable<Jdk> {
 					.providers()
 					.stream()
 					.filter(providerFilter)
-					.map(p -> p.getInstalledByPath(jdkHome))
+					.map(p -> p.getInstalledByPath(jdkHome, JdkFilter.and()))
 					.filter(Objects::nonNull)
 					.findFirst()
 					.orElse(null);

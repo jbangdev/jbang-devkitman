@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import dev.jbang.devkitman.BaseTest;
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.JdkFilter;
 
 public class WindowsJdkProviderTest extends BaseTest {
 	@Test
@@ -62,6 +63,11 @@ public class WindowsJdkProviderTest extends BaseTest {
 		assertThat(installed, hasSize(1));
 		assertThat(installed.get(0).id(), is("23-windows"));
 		assertThat(installed.get(0).home(), is(validJdk));
+		assertThat(provider.listInstalled(JdkFilter.or(JdkFilter.JDK, JdkFilter.tag("Jre"))).count(), is(2L));
+		Jdk.InstalledJdk jre = provider.getInstalledById("23-jre-windows", JdkFilter.tag("Jre"));
+		assertThat(jre, notNullValue());
+		assertThat(jre.home(), is(jreHome));
+		assertThat(provider.getInstalledById("23-jre-windows"), nullValue());
 	}
 
 	@Test

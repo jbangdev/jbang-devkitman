@@ -67,6 +67,71 @@ public interface JdkProvider {
 	@NonNull
 	Stream<Jdk.InstalledJdk> listInstalled();
 
+	default Stream<Jdk.InstalledJdk> listInstalled(JdkFilter filter) {
+		return listInstalled().filter(filter::matches);
+	}
+
+	default Jdk.@Nullable InstalledJdk getInstalledByVersion(int version, boolean openVersion, JdkFilter filter) {
+		Jdk.InstalledJdk candidate = getInstalledByVersion(version, openVersion);
+		if (candidate != null && filter.matches(candidate)) {
+			return candidate;
+		}
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled(filter)) {
+			return installed.filter(Jdk.Predicates.forVersion(version, openVersion)).findFirst().orElse(null);
+		}
+	}
+
+	default Jdk.@Nullable InstalledJdk getInstalledById(String id, JdkFilter filter) {
+		if (!isValidId(id)) {
+			return null;
+		}
+		Jdk.InstalledJdk candidate = getInstalledById(id);
+		if (candidate != null && filter.matches(candidate)) {
+			return candidate;
+		}
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled(filter)) {
+			return installed.filter(Jdk.Predicates.id(id)).findFirst().orElse(null);
+		}
+	}
+
+	default Jdk.@Nullable InstalledJdk getInstalledByPath(Path path, JdkFilter filter) {
+		Jdk.InstalledJdk candidate = getInstalledByPath(path);
+		if (candidate != null && filter.matches(candidate)) {
+			return candidate;
+		}
+		try (Stream<Jdk.InstalledJdk> installed = listInstalled(filter)) {
+			return installed.filter(Jdk.Predicates.path(path)).findFirst().orElse(null);
+		}
+	}
+
+	default Stream<Jdk.AvailableJdk> listAvailable(JdkFilter filter) {
+		return listAvailable().filter(filter::matches);
+	}
+
+	default Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion, JdkFilter filter) {
+		Jdk.AvailableJdk candidate = getAvailableByVersion(version, openVersion);
+		if (candidate != null && filter.matches(candidate)) {
+			return candidate;
+		}
+		try (Stream<Jdk.AvailableJdk> available = listAvailable(filter)) {
+			return available.filter(Jdk.Predicates.forVersion(version, openVersion)).findFirst().orElse(null);
+		} catch (UnsupportedOperationException ex) {
+			return null;
+		}
+	}
+
+	default Jdk.@Nullable AvailableJdk getAvailableByIdOrToken(String id, JdkFilter filter) {
+		Jdk.AvailableJdk candidate = getAvailableByIdOrToken(id);
+		if (candidate != null && filter.matches(candidate)) {
+			return candidate;
+		}
+		try (Stream<Jdk.AvailableJdk> available = listAvailable(filter)) {
+			return available.filter(Jdk.Predicates.id(id)).findFirst().orElse(null);
+		} catch (UnsupportedOperationException ex) {
+			return null;
+		}
+	}
+
 	/**
 	 * Determines if a JDK of the requested version is currently installed by this
 	 * provider and if so returns its respective <code>Jdk</code> object, otherwise

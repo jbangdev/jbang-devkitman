@@ -16,6 +16,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import dev.jbang.devkitman.Jdk;
+import dev.jbang.devkitman.JdkFilter;
 import dev.jbang.devkitman.JdkInstaller;
 import dev.jbang.devkitman.JdkInstallers;
 import dev.jbang.devkitman.JdkProvider;
@@ -95,24 +96,32 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	@NonNull
 	@Override
 	public Stream<Jdk.AvailableJdk> listAvailable() {
+		return listAvailable(JdkFilter.JDK);
+	}
+
+	@Override
+	public Stream<Jdk.AvailableJdk> listAvailable(JdkFilter filter) {
 		try {
-			VersionsResponse res = readPackagesForList();
-			return processPackages(res.result, majorVersionSort()).distinct();
+			List<JdkResult> results = readPackages(0, true, "ga,ea", filter);
+			return processPackages(results, majorVersionSort()).distinct();
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't list available JDKs", e);
 			return Stream.empty();
 		}
 	}
 
-	private VersionsResponse readPackagesForList() throws IOException {
-		return readVersionsFromUrl(
-				getVersionsUrl(0, true, OsUtils.getOS(), OsUtils.getArch(), distros, "ga,ea"));
+	@Override
+	public Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
+		return getAvailableByVersion(version, openVersion, JdkFilter.JDK);
 	}
 
 	@Override
-	public Jdk.@Nullable AvailableJdk getAvailableByVersion(int version, boolean openVersion) {
+	public Jdk.AvailableJdk getAvailableByVersion(int version, boolean openVersion, JdkFilter filter) {
 		int djv = jdkProvider.manager().defaultJavaVersion;
 		Comparator<JdkResult> preferGaSort = (j1, j2) -> {
+			if (!j1.package_type.equalsIgnoreCase(j2.package_type)) {
+				return "jdk".equalsIgnoreCase(j1.package_type) ? -1 : 1;
+			}
 			// Prefer versions equal to the default Java version
 			if (j1.major_version == djv && j2.major_version != djv) {
 				return -1;
@@ -127,25 +136,58 @@ public class FoojayJdkInstaller implements JdkInstaller {
 			return majorVersionSort().compare(j1, j2);
 		};
 		try {
-			VersionsResponse res = readPackagesForVersion(version, openVersion);
-			return processPackages(res.result, preferGaSort)
-				.filter(Jdk.Predicates.forVersion(version, openVersion))
-				.findFirst()
-				.orElse(null);
+			for (String type : packageTypes(filter)) {
+				List<JdkResult> results = readPackages(version, openVersion, "ga", filter,
+						Collections.singletonList(type));
+				if (results.isEmpty()) {
+					results = readPackages(version, openVersion, "ea", filter, Collections.singletonList(type));
+				}
+				Jdk.AvailableJdk candidate = processPackages(results, preferGaSort)
+					.filter(Jdk.Predicates.forVersion(version, openVersion))
+					.findFirst()
+					.orElse(null);
+				if (candidate != null) {
+					return candidate;
+				}
+			}
+			return null;
 		} catch (IOException e) {
 			LOGGER.log(Level.FINE, "Couldn't get available JDK by version", e);
 			return null;
 		}
 	}
 
-	private VersionsResponse readPackagesForVersion(Integer minVersion, boolean openVersion) throws IOException {
-		VersionsResponse res = readVersionsFromUrl(
-				getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distros, "ga"));
-		if (res.result.isEmpty()) {
-			res = readVersionsFromUrl(
-					getVersionsUrl(minVersion, openVersion, OsUtils.getOS(), OsUtils.getArch(), distros, "ea"));
+	private List<JdkResult> readPackages(int version, boolean openVersion, String status, JdkFilter filter)
+			throws IOException {
+		return readPackages(version, openVersion, status, filter, packageTypes(filter));
+	}
+
+	private List<String> packageTypes(JdkFilter filter) {
+		List<String> types = Arrays.asList("jdk", "jre");
+		if (filter instanceof JdkFilter.Tag) {
+			String tag = ((JdkFilter.Tag) filter).tag();
+			if ("jdk".equalsIgnoreCase(tag) || "jre".equalsIgnoreCase(tag)) {
+				types = Collections.singletonList(tag.toLowerCase(Locale.ROOT));
+			}
 		}
-		return res;
+		return types;
+	}
+
+	private List<JdkResult> readPackages(int version, boolean openVersion, String status, JdkFilter filter,
+			List<String> types)
+			throws IOException {
+		List<JdkResult> results = new ArrayList<>();
+		for (String type : types) {
+			VersionsResponse response = readVersionsFromUrl(
+					getVersionsUrl(version, openVersion, OsUtils.getOS(), OsUtils.getArch(), distros, status, type));
+			response.result.stream()
+				.filter(result -> type.equalsIgnoreCase(result.package_type))
+				.filter(result -> filter.matches(determineTags(result)))
+				.filter(result -> version == 0
+						|| (openVersion ? result.major_version >= version : result.major_version == version))
+				.forEach(results::add);
+		}
+		return results;
 	}
 
 	private Stream<Jdk.AvailableJdk> processPackages(List<JdkResult> jdks, Comparator<JdkResult> sortFunc) {
@@ -159,7 +201,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 
 	private @NonNull String determineId(@NonNull JdkResult jdk) {
 		String id = jdk.java_version + "-" + jdk.distribution;
-		if (Jdk.Default.Tags.Jre.name().equals(jdk.package_type)) {
+		if (Jdk.Default.Tags.Jre.name().equalsIgnoreCase(jdk.package_type)) {
 			id += "-jre";
 		}
 		if (jdk.javafx_bundled) {
@@ -193,25 +235,14 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	// Filter out any EA releases for which a GA with
 	// the same major version exists
 	private List<JdkResult> filterEA(List<JdkResult> jdks) {
-		Set<Integer> GAs = jdks.stream()
+		Set<String> GAs = jdks.stream()
 			.filter(jdk -> jdk.release_status.equals("ga"))
-			.map(jdk -> jdk.major_version)
+			.map(jdk -> jdk.major_version + "-" + jdk.package_type)
 			.collect(Collectors.toSet());
 
-		JdkResult[] lastJdk = new JdkResult[] { null };
 		return jdks.stream()
-			.filter(
-					jdk -> {
-						if (lastJdk[0] == null
-								|| lastJdk[0].major_version != jdk.major_version
-										&& (jdk.release_status.equals("ga")
-												|| !GAs.contains(jdk.major_version))) {
-							lastJdk[0] = jdk;
-							return true;
-						} else {
-							return false;
-						}
-					})
+			.filter(jdk -> jdk.release_status.equals("ga")
+					|| !GAs.contains(jdk.major_version + "-" + jdk.package_type))
 			.collect(Collectors.toList());
 	}
 
@@ -281,12 +312,12 @@ public class FoojayJdkInstaller implements JdkInstaller {
 	}
 
 	private static String getVersionsUrl(int minVersion, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,
-			String distros, String status) {
-		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(minVersion, openVersion, os, arch, distros, status);
+			String distros, String status, String packageType) {
+		return FOOJAY_JDK_VERSIONS_URL + getUrlParams(minVersion, openVersion, os, arch, distros, status, packageType);
 	}
 
 	private static String getUrlParams(int version, boolean openVersion, OsUtils.OS os, OsUtils.Arch arch,
-			String distros, String status) {
+			String distros, String status, String packageType) {
 		Map<String, String> params = new HashMap<>();
 		if (version > 0) {
 			String v = String.valueOf(version);
@@ -314,7 +345,7 @@ public class FoojayJdkInstaller implements JdkInstaller {
 		params.put("archive_type", archiveType);
 
 		params.put("architecture", arch.name());
-		params.put("package_type", "jdk");
+		params.put("package_type", packageType);
 		params.put("operating_system", os.name());
 
 		if (os == OsUtils.OS.windows) {
